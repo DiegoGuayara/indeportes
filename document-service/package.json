@@ -1,0 +1,28 @@
+{
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "cors": "^2.8.6",
+    "docxtemplater": "^3.71.0",
+    "express": "^5.2.1",
+    "multer": "^2.4.0",
+    "pizzip": "^3.3.0",
+    "typescript": "^7.0.2"
+  },
+  "name": "document-service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc",
+    "start": "node dist/App.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/multer": "^2.3.0"
+  }
+}
