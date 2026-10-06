@@ -4,6 +4,12 @@ type AnalyzeResponse = {
   fields: string[];
 };
 
+const formatFieldLabel = (field: string) =>
+  field
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 export function Uploader() {
   const [file, setFile] = useState<File | null>(null);
   const [fields, setFields] = useState<string[]>([]);
@@ -129,60 +135,108 @@ export function Uploader() {
   };
 
   return (
-    <main>
-      <h1>Generador de documentos</h1>
+    <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-900">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+        <header className="space-y-2">
+          <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
+            Plantillas Word
+          </p>
+          <h1 className="text-3xl font-bold">Generador de documentos</h1>
+          <p className="max-w-2xl text-sm text-slate-600">
+            Sube una plantilla .docx con campos como {"{{nombre}}"} y completa
+            los datos para generar el documento final.
+          </p>
+        </header>
 
-      <section>
-        <label htmlFor="template">Subir plantilla Word</label>
+        <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-2">
+            <label
+              className="text-sm font-medium text-slate-700"
+              htmlFor="template"
+            >
+              Subir plantilla Word
+            </label>
 
-        <input
-          id="template"
-          type="file"
-          accept=".docx"
-          onChange={handleFileChange}
-        />
+            <input
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              id="template"
+              type="file"
+              accept=".docx"
+              onChange={handleFileChange}
+            />
+          </div>
 
-        {file && <p>Archivo seleccionado: {file.name}</p>}
+          {file && (
+            <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              Archivo seleccionado:{" "}
+              <span className="font-medium text-slate-900">{file.name}</span>
+            </p>
+          )}
 
-        <button
-          type="button"
-          onClick={handleAnalyzeTemplate}
-          disabled={loading}
-        >
-          {loading ? "Analizando..." : "Enviar documento"}
-        </button>
+          <div>
+            <button
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              type="button"
+              onClick={handleAnalyzeTemplate}
+              disabled={loading}
+            >
+              {loading ? "Analizando..." : "Enviar documento"}
+            </button>
+          </div>
 
-        {error && <p>{error}</p>}
-      </section>
-
-      {fields.length > 0 && (
-        <section>
-          <h2>Campos encontrados</h2>
-
-          {fields.map((field) => (
-            <div key={field}>
-              <label htmlFor={field}>{field}</label>
-
-              <input
-                id={field}
-                type="text"
-                value={values[field] ?? ""}
-                onChange={(event) =>
-                  handleInputChange(field, event.target.value)
-                }
-              />
-            </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={handleGenerateDocument}
-            disabled={generating}
-          >
-            {generating ? "Generando..." : "Listo"}
-          </button>
+          {error && (
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          )}
         </section>
-      )}
+
+        {fields.length > 0 && (
+          <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div>
+              <h2 className="text-xl font-semibold">Campos encontrados</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Completa la información que se reemplazará en la plantilla.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {fields.map((field) => (
+                <div className="flex flex-col gap-2" key={field}>
+                  <label
+                    className="text-sm font-medium text-slate-700"
+                    htmlFor={field}
+                  >
+                    {formatFieldLabel(field)}
+                  </label>
+
+                  <input
+                    className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    id={field}
+                    type="text"
+                    value={values[field] ?? ""}
+                    onChange={(event) =>
+                      handleInputChange(field, event.target.value)
+                    }
+                    placeholder={`Escribe ${formatFieldLabel(field).toLowerCase()}`}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex x border-t border-slate-100 pt-5">
+              <button
+                className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                type="button"
+                onClick={handleGenerateDocument}
+                disabled={generating}
+              >
+                {generating ? "Generando..." : "Generar documento"}
+              </button>
+            </div>
+          </section>
+        )}
+      </div>
     </main>
   );
 }
