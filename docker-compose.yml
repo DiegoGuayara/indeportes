@@ -6,8 +6,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: document_service
-      MYSQL_USER: root
-      MYSQL_PASSWORD: ''
+      MYSQL_USER: document_user
+      MYSQL_PASSWORD: document_password
     ports:
       - "3306:3306"
     volumes:
