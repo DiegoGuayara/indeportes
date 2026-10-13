@@ -49,6 +49,35 @@ export class TemplateService {
     });
   }
 
+  async generateDocument(id: number, values: Record<string, unknown>) {
+    const template = await this.templateRepository.findById(id);
+
+    if (!template) {
+      throw new Error("La plantilla no existe");
+    }
+
+    const templateBuffer = await this.templateRepository.readTemplateFile(
+      template.filePath,
+    );
+    const documentBuffer = this.wordService.generateDocument(
+      templateBuffer,
+      values,
+    );
+
+    const fileName = `${Date.now()}-${template.name}-generado.docx`;
+    const filePath = await this.templateRepository.saveGeneratedDocumentFile(
+      fileName,
+      documentBuffer,
+    );
+
+    await this.templateRepository.createGeneratedDocument({
+      templateId: template.id,
+      filePath,
+    });
+
+    return documentBuffer;
+  }
+
   async delete(id: number) {
     const template = await this.templateRepository.findById(id);
 

@@ -77,6 +77,49 @@ export class TemplateController {
     }
   }
 
+  async generate(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Number(req.params.id);
+
+      if (Number.isNaN(id)) {
+        res.status(400).json({
+          message: "El ID de la plantilla no es válido",
+        });
+        return;
+      }
+
+      const values = req.body.values as Record<string, unknown> | undefined;
+
+      if (!values) {
+        res.status(400).json({
+          message: "No se enviaron los valores",
+        });
+        return;
+      }
+
+      const buffer = await this.templateService.generateDocument(id, values);
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="documento-generado.docx"',
+      );
+
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error al generar documento desde plantilla: ", error);
+      res.status(500).json({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Error al generar documento desde plantilla",
+      });
+    }
+  }
+
   async delete(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);

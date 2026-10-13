@@ -84,3 +84,22 @@ export const deleteTemplate = async (id: number) => {
   }
 };
 
+export const generateDocumentFromTemplate = async (
+  id: number,
+  values: Record<string, unknown>,
+) => {
+  const response = await fetch(`${API_URL}/templates/${id}/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ values }),
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo generar el documento desde la plantilla");
+  }
+
+  return response.blob();
+};
+

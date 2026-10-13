@@ -4,14 +4,40 @@ import { analyzeDocument, generateDocument } from "../services/documentApi";
 
 const formatFieldLabel = (field: string) =>
   field
+    .split(".")
+    .at(-1)!
     .replaceAll("_", " ")
     .replaceAll("-", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+type RepeatingValues = Record<string, Array<Record<string, string>>>;
+
+const getFieldGroupName = (field: string) => field.split(".")[0] ?? "";
+const getFieldNameInGroup = (field: string) => field.split(".")[1] ?? field;
+const getSimpleFields = (fields: string[]) =>
+  fields.filter((field) => !field.includes("."));
+const getRepeatingGroups = (fields: string[]) =>
+  fields.reduce<Record<string, string[]>>((groups, field) => {
+    if (!field.includes(".")) {
+      return groups;
+    }
+
+    const groupName = getFieldGroupName(field);
+    groups[groupName] = [...(groups[groupName] ?? []), field];
+
+    return groups;
+  }, {});
+const buildEmptyGroupRow = (fields: string[]) =>
+  fields.reduce<Record<string, string>>((row, field) => {
+    row[getFieldNameInGroup(field)] = "";
+    return row;
+  }, {});
 
 export function Uploader() {
   const [file, setFile] = useState<File | null>(null);
   const [fields, setFields] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [repeatingValues, setRepeatingValues] = useState<RepeatingValues>({});
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -31,6 +57,7 @@ export function Uploader() {
     setFile(selectedFile);
     setFields([]);
     setValues({});
+    setRepeatingValues({});
   };
 
   const handleAnalyzeTemplate = async () => {
@@ -55,8 +82,10 @@ export function Uploader() {
       }
 
       setFields(data.fields);
+      const simpleFields = getSimpleFields(data.fields);
+      const repeatingGroups = getRepeatingGroups(data.fields);
 
-      const initialValues = data.fields.reduce<Record<string, string>>(
+      const initialValues = simpleFields.reduce<Record<string, string>>(
         (acc, field) => {
           acc[field] = "";
           return acc;
@@ -65,6 +94,15 @@ export function Uploader() {
       );
 
       setValues(initialValues);
+      setRepeatingValues(
+        Object.entries(repeatingGroups).reduce<RepeatingValues>(
+          (acc, [groupName, groupFields]) => {
+            acc[groupName] = [buildEmptyGroupRow(groupFields)];
+            return acc;
+          },
+          {},
+        ),
+      );
     } catch (error) {
       setError("Ocurrió un error enviando el documento");
     } finally {
@@ -79,6 +117,47 @@ export function Uploader() {
     }));
   };
 
+  const handleRepeatingValueChange = (
+    groupName: string,
+    rowIndex: number,
+    fieldName: string,
+    value: string,
+  ) => {
+    setRepeatingValues((currentValues) => ({
+      ...currentValues,
+      [groupName]: (currentValues[groupName] ?? []).map((row, index) =>
+        index === rowIndex
+          ? {
+              ...row,
+              [fieldName]: value,
+            }
+          : row,
+      ),
+    }));
+  };
+
+  const handleAddRepeatingRow = (groupName: string, groupFields: string[]) => {
+    setRepeatingValues((currentValues) => ({
+      ...currentValues,
+      [groupName]: [
+        ...(currentValues[groupName] ?? []),
+        buildEmptyGroupRow(groupFields),
+      ],
+    }));
+  };
+
+  const handleRemoveRepeatingRow = (groupName: string, rowIndex: number) => {
+    setRepeatingValues((currentValues) => {
+      const rows = currentValues[groupName] ?? [];
+
+      return {
+        ...currentValues,
+        [groupName]:
+          rows.length <= 1 ? rows : rows.filter((_, index) => index !== rowIndex),
+      };
+    });
+  };
+
   const handleGenerateDocument = async () => {
     if (!file) {
       setError("Selecciona primero una plantilla word");
@@ -89,7 +168,10 @@ export function Uploader() {
     setError("");
 
     try {
-      const blob = await generateDocument(file, values);
+      const blob = await generateDocument(file, {
+        ...values,
+        ...repeatingValues,
+      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
 
@@ -173,28 +255,122 @@ export function Uploader() {
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {fields.map((field) => (
-                <div className="flex flex-col gap-2" key={field}>
-                  <label
-                    className="text-sm font-medium text-slate-700"
-                    htmlFor={field}
-                  >
-                    {formatFieldLabel(field)}
-                  </label>
+            <div className="flex flex-col gap-5">
+              {getSimpleFields(fields).length > 0 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {getSimpleFields(fields).map((field) => (
+                    <div className="flex flex-col gap-2" key={field}>
+                      <label
+                        className="text-sm font-medium text-slate-700"
+                        htmlFor={field}
+                      >
+                        {formatFieldLabel(field)}
+                      </label>
 
-                  <input
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    id={field}
-                    type="text"
-                    value={values[field] ?? ""}
-                    onChange={(event) =>
-                      handleInputChange(field, event.target.value)
-                    }
-                    placeholder={`Escribe ${formatFieldLabel(field).toLowerCase()}`}
-                  />
+                      <input
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        id={field}
+                        type="text"
+                        value={values[field] ?? ""}
+                        onChange={(event) =>
+                          handleInputChange(field, event.target.value)
+                        }
+                        placeholder={`Escribe ${formatFieldLabel(field).toLowerCase()}`}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {Object.entries(getRepeatingGroups(fields)).map(
+                ([groupName, groupFields]) => (
+                  <div
+                    className="flex flex-col gap-4 rounded-md border border-slate-200 bg-slate-50 p-4"
+                    key={groupName}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="font-semibold capitalize">
+                          {groupName.replaceAll("_", " ")}
+                        </h3>
+                        <p className="text-sm text-slate-600">
+                          Agrega las filas que necesites para esta lista.
+                        </p>
+                      </div>
+                      <button
+                        className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        type="button"
+                        onClick={() =>
+                          handleAddRepeatingRow(groupName, groupFields)
+                        }
+                      >
+                        Agregar fila
+                      </button>
+                    </div>
+
+                    {(repeatingValues[groupName] ?? []).map(
+                      (row, rowIndex) => (
+                        <div
+                          className="rounded-md border border-slate-200 bg-white p-3"
+                          key={`${groupName}-${rowIndex}`}
+                        >
+                          <div className="mb-3 flex items-center justify-between">
+                            <p className="text-sm font-medium text-slate-700">
+                              Fila {rowIndex + 1}
+                            </p>
+                            <button
+                              className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                              type="button"
+                              disabled={
+                                (repeatingValues[groupName] ?? []).length <= 1
+                              }
+                              onClick={() =>
+                                handleRemoveRepeatingRow(groupName, rowIndex)
+                              }
+                            >
+                              Quitar
+                            </button>
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {groupFields.map((field) => {
+                              const fieldName = getFieldNameInGroup(field);
+
+                              return (
+                                <div
+                                  className="flex flex-col gap-2"
+                                  key={field}
+                                >
+                                  <label
+                                    className="text-sm font-medium text-slate-700"
+                                    htmlFor={`${groupName}-${rowIndex}-${fieldName}`}
+                                  >
+                                    {formatFieldLabel(field)}
+                                  </label>
+                                  <input
+                                    className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    id={`${groupName}-${rowIndex}-${fieldName}`}
+                                    type="text"
+                                    value={row[fieldName] ?? ""}
+                                    onChange={(event) =>
+                                      handleRepeatingValueChange(
+                                        groupName,
+                                        rowIndex,
+                                        fieldName,
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                ),
+              )}
             </div>
 
             <div className="flex justify-end border-t border-slate-100 pt-5">

@@ -15,8 +15,8 @@ app.get("/", (req, res) => {
   res.send(`Document Service está corriendo en el puerto ${PORT}`);
 });
 
-app.use(templateRoutes);
-app.use(documentRoutes);
+app.use("/templates", templateRoutes);
+app.use("/documents", documentRoutes);
 
 app.listen(PORT, () => {
   console.log(`Document Service está corriendo en el puerto ${PORT}`);

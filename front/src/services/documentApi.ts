@@ -22,7 +22,7 @@ export const analyzeDocument = async (file: File) => {
 
 export const generateDocument = async (
   file: File,
-  values: Record<string, string>,
+  values: Record<string, unknown>,
 ) => {
   const formData = new FormData();
   formData.append("template", file);

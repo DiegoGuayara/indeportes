@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../lib/prisma.js";
 
@@ -30,6 +30,12 @@ export class TemplateRepository {
     filePath: string;
     fields: string[];
   }) {
+    const formatFieldLabel = (field: string) => {
+      const fieldName = field.includes(".") ? field.split(".").pop() : field;
+
+      return (fieldName ?? field).replaceAll("_", " ").replaceAll("-", " ");
+    };
+
     return await prisma.template.create({
       data: {
         name: data.name,
@@ -38,7 +44,7 @@ export class TemplateRepository {
         fields: {
           create: data.fields.map((field) => ({
             name: field,
-            label: field.replaceAll("_", " ").replaceAll("-", " "),
+            label: formatFieldLabel(field),
             type: "text",
             required: false,
           })),
@@ -58,6 +64,26 @@ export class TemplateRepository {
     await writeFile(filePath, buffer);
 
     return filePath;
+  }
+
+  async readTemplateFile(filePath: string) {
+    return await readFile(filePath);
+  }
+
+  async saveGeneratedDocumentFile(fileName: string, buffer: Buffer) {
+    const folder = path.resolve("storage", "documents");
+    const filePath = path.join(folder, fileName);
+
+    await mkdir(folder, { recursive: true });
+    await writeFile(filePath, buffer);
+
+    return filePath;
+  }
+
+  async createGeneratedDocument(data: { templateId: number; filePath: string }) {
+    return await prisma.generatedDocument.create({
+      data,
+    });
   }
 
   async delete(id: number) {

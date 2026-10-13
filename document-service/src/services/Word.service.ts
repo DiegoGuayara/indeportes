@@ -2,6 +2,10 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 
 export class WordService {
+  private readonly tagRegex = /\{\{\s*([\p{L}\p{N}_.-]+)\s*\}\}/gu;
+  private readonly loopRegex =
+    /\{\{#\s*([\p{L}\p{N}_.-]+)\s*\}\}([\s\S]*?)\{\{\/\s*\1\s*\}\}/gu;
+
   private decodeXmlText(text: string): string {
     return text
       .replace(/&lt;/g, "<")
@@ -31,18 +35,35 @@ export class WordService {
       )
       .join("\n");
 
-    const matches = documentText.matchAll(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g);
+    const fields = new Set<string>();
 
-    return [
-      ...new Set(
-        [...matches]
-          .map((match) => match[1])
-          .filter((field): field is string => Boolean(field)),
-      ),
-    ];
+    const documentTextWithoutLoops = documentText.replace(
+      this.loopRegex,
+      (_loop, groupName: string, loopContent: string) => {
+        const loopFields = loopContent.matchAll(this.tagRegex);
+
+        for (const field of loopFields) {
+          if (field[1]) {
+            fields.add(`${groupName}.${field[1]}`);
+          }
+        }
+
+        return "";
+      },
+    );
+
+    const simpleFields = documentTextWithoutLoops.matchAll(this.tagRegex);
+
+    for (const field of simpleFields) {
+      if (field[1]) {
+        fields.add(field[1]);
+      }
+    }
+
+    return [...fields];
   };
 
-  generateDocument(buffer: Buffer, values: Record<string, string>): Buffer {
+  generateDocument(buffer: Buffer, values: Record<string, unknown>): Buffer {
     const zip = new PizZip(buffer);
 
     const doc = new Docxtemplater(zip, {
@@ -52,6 +73,7 @@ export class WordService {
         start: "{{",
         end: "}}",
       },
+      nullGetter: () => "",
     });
 
     doc.render(values);

@@ -15,6 +15,7 @@ router.post(
   upload.single("template"),
   templateController.create.bind(templateController),
 );
+router.post("/:id/generate", templateController.generate.bind(templateController));
 router.delete("/:id", templateController.delete.bind(templateController));
 
 export default router;
