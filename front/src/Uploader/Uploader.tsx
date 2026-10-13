@@ -1,8 +1,6 @@
 import { useState } from "react";
-
-type AnalyzeResponse = {
-  fields: string[];
-};
+import { TemplateManager } from "../Templates/TemplateManager";
+import { analyzeDocument, generateDocument } from "../services/documentApi";
 
 const formatFieldLabel = (field: string) =>
   field
@@ -45,19 +43,7 @@ export function Uploader() {
     setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("template", file);
-
-      const response = await fetch("http://localhost:10101/documents/analyze", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("No se pudo analizar el documento");
-      }
-
-      const data: AnalyzeResponse = await response.json();
+      const data = await analyzeDocument(file);
 
       if (data.fields.length === 0) {
         setFields([]);
@@ -103,20 +89,7 @@ export function Uploader() {
     setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("template", file);
-      formData.append("values", JSON.stringify(values));
-
-      const response = await fetch("http://localhost:10101/documents/generate", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("No se pudo generar el documento");
-      }
-
-      const blob = await response.blob();
+      const blob = await generateDocument(file, values);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
 
@@ -224,7 +197,7 @@ export function Uploader() {
               ))}
             </div>
 
-            <div className="flex x border-t border-slate-100 pt-5">
+            <div className="flex justify-end border-t border-slate-100 pt-5">
               <button
                 className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 type="button"
@@ -236,6 +209,8 @@ export function Uploader() {
             </div>
           </section>
         )}
+
+        <TemplateManager />
       </div>
     </main>
   );

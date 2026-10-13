@@ -19,7 +19,7 @@ export class WordService {
       .join("");
   }
 
-  findTemplateFields = (buffer: Buffer) => {
+  findTemplateFields = (buffer: Buffer): string[] => {
     const zip = new PizZip(buffer);
     const xmlFileNames = Object.keys(zip.files).filter((fileName) =>
       /^word\/(document|header\d+|footer\d+)\.xml$/.test(fileName),
@@ -33,7 +33,13 @@ export class WordService {
 
     const matches = documentText.matchAll(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g);
 
-    return [...new Set([...matches].map((match) => match[1]))];
+    return [
+      ...new Set(
+        [...matches]
+          .map((match) => match[1])
+          .filter((field): field is string => Boolean(field)),
+      ),
+    ];
   };
 
   generateDocument(buffer: Buffer, values: Record<string, string>): Buffer {

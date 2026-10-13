@@ -1,8 +1,10 @@
 import { TemplateRepository } from "../repository/Template.Repository.js";
+import { WordService } from "./Word.service.js";
 
 export class TemplateService {
   constructor(
-    private readonly templateRepository:TemplateRepository,
+    private readonly templateRepository: TemplateRepository,
+    private readonly wordService: WordService,
   ) {}
 
   async getAll() {
@@ -19,16 +21,32 @@ export class TemplateService {
     return template;
   }
 
-  async create(data: { name: string; description?: string; filePath: string }) {
+  async create(data: {
+    name: string;
+    description?: string;
+    file: Express.Multer.File;
+  }) {
     if (!data.name || data.name.trim() === "") {
       throw new Error("El nombre de la plantilla es obligatorio");
     }
 
-    if (!data.filePath || data.filePath.trim() === "") {
-      throw new Error("La ruta del archivo es obligatoria");
+    if (!data.file.originalname.endsWith(".docx")) {
+      throw new Error("Solo se permiten plantillas .docx");
     }
 
-    return await this.templateRepository.create(data);
+    const fields = this.wordService.findTemplateFields(data.file.buffer);
+    const fileName = `${Date.now()}-${data.file.originalname}`;
+    const filePath = await this.templateRepository.saveTemplateFile(
+      fileName,
+      data.file.buffer,
+    );
+
+    return await this.templateRepository.create({
+      name: data.name,
+      ...(data.description ? { description: data.description } : {}),
+      filePath,
+      fields,
+    });
   }
 
   async delete(id: number) {

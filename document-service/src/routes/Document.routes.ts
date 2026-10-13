@@ -15,7 +15,7 @@ const documentController = new DocumentController(wordService);
 
 router.post(
   "/analyze",
-  upload.single("document"),
+  upload.single("template"),
   documentController.analyze.bind(documentController),
 );
 

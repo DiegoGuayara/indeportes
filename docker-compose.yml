@@ -13,5 +13,24 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  document-service:
+    build: ./document-service
+    container_name: document-service
+    restart: unless-stopped
+    ports:
+      - "10101:10101"
+    environment:
+      PORT: 10101
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_USER: document_user
+      DATABASE_PASSWORD: document_password
+      DATABASE_NAME: document_service
+      DATABASE_URL: mysql://document_user:document_password@mysql:3306/document_service
+    volumes:
+      - ./document-service/storage:/app/storage
+    depends_on:
+      - mysql
+
 volumes:
   mysql_data:

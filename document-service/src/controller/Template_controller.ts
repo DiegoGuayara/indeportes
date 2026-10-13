@@ -1,13 +1,15 @@
 import type { Request, Response } from "express";
 import { TemplateService } from "../services/Template.service.js";
 import { TemplateRepository } from "../repository/Template.Repository.js";
+import { WordService } from "../services/Word.service.js";
 
 export class TemplateController {
   private readonly templateService: TemplateService;
 
   constructor() {
     const templateRepository = new TemplateRepository();
-    this.templateService = new TemplateService(templateRepository);
+    const wordService = new WordService();
+    this.templateService = new TemplateService(templateRepository, wordService);
   }
 
   async getAll(req: Request, res: Response): Promise<void> {
@@ -48,12 +50,19 @@ export class TemplateController {
 
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const { name, description, filePath } = req.body;
+      const { name, description } = req.body;
+
+      if (!req.file) {
+        res.status(400).json({
+          message: "No se envió ninguna plantilla",
+        });
+        return;
+      }
 
       const template = await this.templateService.create({
         name,
         description,
-        filePath,
+        file: req.file,
       });
 
       res.status(201).json(template);
