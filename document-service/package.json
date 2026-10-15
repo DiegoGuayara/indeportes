@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc && node scripts/copy-generated-client.mjs",
-    "start": "node dist/App.js"
+    "start": "node dist/App.js",
+    "start:prod": "prisma migrate deploy && node dist/App.js"
   },
   "keywords": [],
   "author": "",
