@@ -12,4 +12,4 @@ RUN npm run build
 
 EXPOSE 10101
 
-CMD ["npm", "start"]
+CMD ["npm", "run", "start:prod"]
