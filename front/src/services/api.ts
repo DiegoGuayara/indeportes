@@ -1,2 +1,1 @@
-export const API_URL = "http://localhost:10101";
-
+export const API_URL = "https://indeportes-production.up.railway.app";
