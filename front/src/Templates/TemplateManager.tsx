@@ -271,7 +271,7 @@ export function TemplateManager() {
   });
 
   return (
-    <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       <div>
         <h2 className="text-xl font-semibold">Plantillas guardadas</h2>
         <p className="mt-1 text-sm text-slate-600">
@@ -280,7 +280,7 @@ export function TemplateManager() {
       </div>
 
       <form
-        className="grid gap-4 sm:grid-cols-2"
+            className="grid min-w-0 gap-4 sm:grid-cols-2"
         onSubmit={handleCreateTemplate}
       >
         <div className="flex flex-col gap-2">
@@ -338,7 +338,7 @@ export function TemplateManager() {
 
         <div className="flex justify-end sm:col-span-2">
           <button
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
             type="submit"
             disabled={saving}
           >
@@ -386,14 +386,14 @@ export function TemplateManager() {
             ) : (
               filteredTemplates.map((template) => (
               <article
-                className="flex flex-col gap-3 rounded-md border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex min-w-0 flex-col gap-3 rounded-md border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"
                 key={template.id}
               >
                 <div>
                   <h3 className="font-semibold text-slate-900">
                     {template.name}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 break-all text-sm text-slate-600">
                     {template.filePath}
                   </p>
                   {template.description && (
@@ -403,16 +403,16 @@ export function TemplateManager() {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex w-full gap-2 sm:w-auto">
                   <button
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:flex-none"
                     type="button"
                     onClick={() => void handleSelectTemplate(template.id)}
                   >
                     Usar
                   </button>
                   <button
-                    className="rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
+                    className="flex-1 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 sm:flex-none"
                     type="button"
                     onClick={() => void handleDeleteTemplate(template.id)}
                   >
@@ -427,7 +427,7 @@ export function TemplateManager() {
       </div>
 
       {selectedTemplate && (
-        <div className="flex flex-col gap-5 rounded-md bg-slate-50 p-4">
+        <div className="flex flex-col gap-5 rounded-md bg-slate-50 p-3 sm:p-4">
           <div>
             <h3 className="font-semibold">Usar plantilla</h3>
             <p className="mt-1 text-sm text-slate-600">
@@ -482,7 +482,7 @@ export function TemplateManager() {
                         </p>
                       </div>
                       <button
-                        className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
                         type="button"
                         onClick={() => handleAddRepeatingRow(groupName, fields)}
                       >
@@ -562,7 +562,7 @@ export function TemplateManager() {
 
           <div className="flex justify-end border-b border-slate-200 pb-5">
             <button
-              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
               type="button"
               disabled={generating || (selectedTemplate.fields?.length ?? 0) === 0}
               onClick={() => void handleGenerateFromTemplate()}

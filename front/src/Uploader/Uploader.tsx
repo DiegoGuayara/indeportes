@@ -190,20 +190,20 @@ export function Uploader() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-900">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+    <main className="min-h-screen bg-slate-100 px-3 py-6 text-slate-900 sm:px-4 sm:py-10">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
             Plantillas Word
           </p>
-          <h1 className="text-3xl font-bold">Generador de documentos</h1>
+          <h1 className="text-2xl font-bold sm:text-3xl">Generador de documentos</h1>
           <p className="max-w-2xl text-sm text-slate-600">
             Sube una plantilla .docx con campos como {"{{nombre}}"} y completa
             los datos para generar el documento final.
           </p>
         </header>
 
-        <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex flex-col gap-2">
             <label
               className="text-sm font-medium text-slate-700"
@@ -222,7 +222,7 @@ export function Uploader() {
           </div>
 
           {file && (
-            <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <p className="break-words rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
               Archivo seleccionado:{" "}
               <span className="font-medium text-slate-900">{file.name}</span>
             </p>
@@ -230,7 +230,7 @@ export function Uploader() {
 
           <div>
             <button
-              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
               type="button"
               onClick={handleAnalyzeTemplate}
               disabled={loading}
@@ -247,7 +247,7 @@ export function Uploader() {
         </section>
 
         {fields.length > 0 && (
-          <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div>
               <h2 className="text-xl font-semibold">Campos encontrados</h2>
               <p className="mt-1 text-sm text-slate-600">
@@ -285,7 +285,7 @@ export function Uploader() {
               {Object.entries(getRepeatingGroups(fields)).map(
                 ([groupName, groupFields]) => (
                   <div
-                    className="flex flex-col gap-4 rounded-md border border-slate-200 bg-slate-50 p-4"
+                    className="flex flex-col gap-4 rounded-md border border-slate-200 bg-slate-50 p-3 sm:p-4"
                     key={groupName}
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -298,7 +298,7 @@ export function Uploader() {
                         </p>
                       </div>
                       <button
-                        className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
                         type="button"
                         onClick={() =>
                           handleAddRepeatingRow(groupName, groupFields)
@@ -375,7 +375,7 @@ export function Uploader() {
 
             <div className="flex justify-end border-t border-slate-100 pt-5">
               <button
-                className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className="inline-flex w-full items-center justify-center rounded-md bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
                 type="button"
                 onClick={handleGenerateDocument}
                 disabled={generating}
