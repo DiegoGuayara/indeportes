@@ -52,6 +52,7 @@ const buildEmptyGroupRow = (fields: TemplateField[]) =>
 
 export function TemplateManager() {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [templateSearch, setTemplateSearch] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
     null,
   );
@@ -255,6 +256,20 @@ export function TemplateManager() {
     }
   };
 
+  const normalizedSearch = templateSearch
+    .trim()
+    .toLocaleLowerCase("es")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const filteredTemplates = templates.filter((template) => {
+    const searchableText = `${template.name} ${template.description ?? ""}`
+      .toLocaleLowerCase("es")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    return searchableText.includes(normalizedSearch);
+  });
+
   return (
     <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <div>
@@ -347,7 +362,29 @@ export function TemplateManager() {
           </p>
         ) : (
           <div className="flex flex-col gap-3">
-            {templates.map((template) => (
+            <div className="flex flex-col gap-2">
+              <label
+                className="text-sm font-medium text-slate-700"
+                htmlFor="templateSearch"
+              >
+                Buscar formatos
+              </label>
+              <input
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                id="templateSearch"
+                type="search"
+                value={templateSearch}
+                onChange={(event) => setTemplateSearch(event.target.value)}
+                placeholder="Escribe un nombre o una descripción..."
+              />
+            </div>
+
+            {filteredTemplates.length === 0 ? (
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                No se encontraron formatos que coincidan con la búsqueda.
+              </p>
+            ) : (
+              filteredTemplates.map((template) => (
               <article
                 className="flex flex-col gap-3 rounded-md border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
                 key={template.id}
@@ -383,7 +420,8 @@ export function TemplateManager() {
                   </button>
                 </div>
               </article>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>
