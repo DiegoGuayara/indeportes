@@ -1,8 +1,16 @@
 import type { Request, Response } from "express";
+import { ExcelService } from "../services/Excel.service.js";
 import { WordService } from "../services/Word.service.js";
 
 export class DocumentController {
-  constructor(private readonly wordService: WordService) {}
+  constructor(
+    private readonly wordService: WordService,
+    private readonly excelService: ExcelService,
+  ) {}
+
+  private getExtension(fileName: string) {
+    return fileName.split(".").pop()?.toLowerCase();
+  }
 
   async analyze(req: Request, res: Response): Promise<void> {
     if (!req.file) {
@@ -13,7 +21,19 @@ export class DocumentController {
     }
 
     try {
-      const fields = this.wordService.findTemplateFields(req.file.buffer);
+      const extension = this.getExtension(req.file.originalname);
+
+      if (extension !== "docx" && extension !== "xlsx") {
+        res.status(400).json({
+          message: "Solo se permiten archivos .docx o .xlsx",
+        });
+        return;
+      }
+
+      const fields =
+        extension === "xlsx"
+          ? await this.excelService.findTemplateFields(req.file.buffer)
+          : this.wordService.findTemplateFields(req.file.buffer);
 
       res.status(200).json({
         fields,
@@ -43,18 +63,32 @@ export class DocumentController {
     }
 
     try {
-      const values = JSON.parse(req.body.values) as Record<string, string>;
+      const extension = this.getExtension(req.file.originalname);
 
-      const buffer = this.wordService.generateDocument(req.file.buffer, values);
+      if (extension !== "docx" && extension !== "xlsx") {
+        res.status(400).json({
+          message: "Solo se permiten archivos .docx o .xlsx",
+        });
+        return;
+      }
+
+      const values = JSON.parse(req.body.values) as Record<string, unknown>;
+
+      const isExcel = extension === "xlsx";
+      const buffer = isExcel
+        ? await this.excelService.generateDocument(req.file.buffer, values)
+        : this.wordService.generateDocument(req.file.buffer, values);
 
       res.setHeader(
         "Content-Type",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        isExcel
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       );
 
       res.setHeader(
         "Content-Disposition",
-        'attachment; filename="documento-generado.docx"',
+        `attachment; filename="documento-generado.${extension}"`,
       );
 
       res.send(buffer);

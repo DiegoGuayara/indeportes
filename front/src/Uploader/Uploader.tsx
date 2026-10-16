@@ -47,8 +47,8 @@ export function Uploader() {
 
     if (!selectedFile) return;
 
-    if (!selectedFile.name.endsWith(".docx")) {
-      setError("Solo puedes subir documentos .docx");
+    if (!/\.(docx|xlsx)$/i.test(selectedFile.name)) {
+      setError("Solo puedes subir documentos .docx o .xlsx");
       setFile(null);
       return;
     }
@@ -176,7 +176,10 @@ export function Uploader() {
       const link = document.createElement("a");
 
       link.href = url;
-      link.download = "documento-generado.docx";
+      const extension = file.name.toLowerCase().endsWith(".xlsx")
+        ? "xlsx"
+        : "docx";
+      link.download = `documento-generado.${extension}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -194,12 +197,12 @@ export function Uploader() {
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
-            Plantillas Word
+            Plantillas Word y Excel
           </p>
           <h1 className="text-2xl font-bold sm:text-3xl">Generador de documentos</h1>
           <p className="max-w-2xl text-sm text-slate-600">
-            Sube una plantilla .docx con campos como {"{{nombre}}"} y completa
-            los datos para generar el documento final.
+            Sube una plantilla .docx o .xlsx con campos como {"{{nombre}}"} y
+            completa los datos para generar el archivo final.
           </p>
         </header>
 
@@ -209,14 +212,14 @@ export function Uploader() {
               className="text-sm font-medium text-slate-700"
               htmlFor="template"
             >
-              Subir plantilla Word
+              Subir plantilla Word o Excel
             </label>
 
             <input
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
               id="template"
               type="file"
-              accept=".docx"
+              accept=".docx,.xlsx"
               onChange={handleFileChange}
             />
           </div>

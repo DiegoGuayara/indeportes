@@ -1,10 +1,12 @@
 import { TemplateRepository } from "../repository/Template.Repository.js";
+import { ExcelService } from "./Excel.service.js";
 import { WordService } from "./Word.service.js";
 
 export class TemplateService {
   constructor(
     private readonly templateRepository: TemplateRepository,
     private readonly wordService: WordService,
+    private readonly excelService: ExcelService,
   ) {}
 
   async getAll() {
@@ -30,11 +32,16 @@ export class TemplateService {
       throw new Error("El nombre de la plantilla es obligatorio");
     }
 
-    if (!data.file.originalname.endsWith(".docx")) {
-      throw new Error("Solo se permiten plantillas .docx");
+    const extension = data.file.originalname.split(".").pop()?.toLowerCase();
+
+    if (extension !== "docx" && extension !== "xlsx") {
+      throw new Error("Solo se permiten plantillas .docx o .xlsx");
     }
 
-    const fields = this.wordService.findTemplateFields(data.file.buffer);
+    const fields =
+      extension === "xlsx"
+        ? await this.excelService.findTemplateFields(data.file.buffer)
+        : this.wordService.findTemplateFields(data.file.buffer);
     const fileName = `${Date.now()}-${data.file.originalname}`;
     const filePath = await this.templateRepository.saveTemplateFile(
       fileName,
@@ -59,12 +66,13 @@ export class TemplateService {
     const templateBuffer = await this.templateRepository.readTemplateFile(
       template.filePath,
     );
-    const documentBuffer = this.wordService.generateDocument(
-      templateBuffer,
-      values,
-    );
+    const isExcel = template.filePath.toLowerCase().endsWith(".xlsx");
+    const documentBuffer = isExcel
+      ? await this.excelService.generateDocument(templateBuffer, values)
+      : this.wordService.generateDocument(templateBuffer, values);
 
-    const fileName = `${Date.now()}-${template.name}-generado.docx`;
+    const extension = isExcel ? "xlsx" : "docx";
+    const fileName = `${Date.now()}-${template.name}-generado.${extension}`;
     const filePath = await this.templateRepository.saveGeneratedDocumentFile(
       fileName,
       documentBuffer,
@@ -75,7 +83,7 @@ export class TemplateService {
       filePath,
     });
 
-    return documentBuffer;
+    return { buffer: documentBuffer, extension };
   }
 
   async delete(id: number) {

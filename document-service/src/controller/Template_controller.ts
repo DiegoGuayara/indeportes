@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { TemplateService } from "../services/Template.service.js";
 import { TemplateRepository } from "../repository/Template.Repository.js";
 import { WordService } from "../services/Word.service.js";
+import { ExcelService } from "../services/Excel.service.js";
 
 export class TemplateController {
   private readonly templateService: TemplateService;
@@ -9,7 +10,12 @@ export class TemplateController {
   constructor() {
     const templateRepository = new TemplateRepository();
     const wordService = new WordService();
-    this.templateService = new TemplateService(templateRepository, wordService);
+    const excelService = new ExcelService();
+    this.templateService = new TemplateService(
+      templateRepository,
+      wordService,
+      excelService,
+    );
   }
 
   async getAll(req: Request, res: Response): Promise<void> {
@@ -97,15 +103,20 @@ export class TemplateController {
         return;
       }
 
-      const buffer = await this.templateService.generateDocument(id, values);
+      const { buffer, extension } = await this.templateService.generateDocument(
+        id,
+        values,
+      );
 
       res.setHeader(
         "Content-Type",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        extension === "xlsx"
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       );
       res.setHeader(
         "Content-Disposition",
-        'attachment; filename="documento-generado.docx"',
+        `attachment; filename="documento-generado.${extension}"`,
       );
 
       res.send(buffer);

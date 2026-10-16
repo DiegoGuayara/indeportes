@@ -96,12 +96,12 @@ export function TemplateManager() {
     event.preventDefault();
 
     if (!form.name.trim() || !templateFile) {
-      setError("El nombre y el archivo .docx son obligatorios");
+      setError("El nombre y un archivo .docx o .xlsx son obligatorios");
       return;
     }
 
-    if (!templateFile.name.endsWith(".docx")) {
-      setError("Solo puedes guardar plantillas .docx");
+    if (!/\.(docx|xlsx)$/i.test(templateFile.name)) {
+      setError("Solo puedes guardar plantillas .docx o .xlsx");
       return;
     }
 
@@ -223,7 +223,10 @@ export function TemplateManager() {
       const link = document.createElement("a");
 
       link.href = url;
-      link.download = `${selectedTemplate.name}-generado.docx`;
+      const extension = selectedTemplate.filePath.toLowerCase().endsWith(".xlsx")
+        ? "xlsx"
+        : "docx";
+      link.download = `${selectedTemplate.name}-generado.${extension}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -302,13 +305,13 @@ export function TemplateManager() {
             className="text-sm font-medium text-slate-700"
             htmlFor="templateFile"
           >
-            Archivo Word
+            Archivo Word o Excel
           </label>
           <input
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             id="templateFile"
             type="file"
-            accept=".docx"
+            accept=".docx,.xlsx"
             onChange={(event) =>
               setTemplateFile(event.target.files?.[0] ?? null)
             }
