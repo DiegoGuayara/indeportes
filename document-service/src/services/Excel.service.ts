@@ -5,7 +5,9 @@ export class ExcelService {
 
   async findTemplateFields(buffer: Buffer): Promise<string[]> {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(
+      buffer as unknown as Parameters<typeof workbook.xlsx.load>[0],
+    );
 
     const fields = new Set<string>();
 
@@ -33,7 +35,9 @@ export class ExcelService {
     values: Record<string, unknown>,
   ): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(
+      buffer as unknown as Parameters<typeof workbook.xlsx.load>[0],
+    );
 
     workbook.eachSheet((worksheet) => {
       worksheet.eachRow({ includeEmpty: false }, (row) => {
