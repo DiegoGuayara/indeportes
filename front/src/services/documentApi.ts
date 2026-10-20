@@ -1,4 +1,4 @@
-import { API_URL } from "./api";
+import { API_URL, apiFetch } from "./api";
 
 export type AnalyzeResponse = {
   fields: string[];
@@ -8,7 +8,7 @@ export const analyzeDocument = async (file: File) => {
   const formData = new FormData();
   formData.append("template", file);
 
-  const response = await fetch(`${API_URL}/documents/analyze`, {
+  const response = await apiFetch(`${API_URL}/documents/analyze`, {
     method: "POST",
     body: formData,
   });
@@ -28,7 +28,7 @@ export const generateDocument = async (
   formData.append("template", file);
   formData.append("values", JSON.stringify(values));
 
-  const response = await fetch(`${API_URL}/documents/generate`, {
+  const response = await apiFetch(`${API_URL}/documents/generate`, {
     method: "POST",
     body: formData,
   });
@@ -49,7 +49,7 @@ export const previewDocument = async (
   formData.append("template", file);
   formData.append("values", JSON.stringify(values));
 
-  const response = await fetch(`${API_URL}/documents/preview`, {
+  const response = await apiFetch(`${API_URL}/documents/preview`, {
     method: "POST",
     body: formData,
     signal,

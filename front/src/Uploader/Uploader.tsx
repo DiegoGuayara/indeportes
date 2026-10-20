@@ -35,7 +35,7 @@ const buildEmptyGroupRow = (fields: string[]) =>
     return row;
   }, {});
 
-export function Uploader() {
+export function Uploader({ isAdmin }: { isAdmin: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [fields, setFields] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -401,7 +401,7 @@ export function Uploader() {
           </section>
         )}
 
-        <TemplateManager />
+        <TemplateManager isAdmin={isAdmin} />
       </div>
     </main>
   );

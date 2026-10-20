@@ -53,7 +53,7 @@ const buildEmptyGroupRow = (fields: TemplateField[]) =>
     return row;
   }, {});
 
-export function TemplateManager() {
+export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templateSearch, setTemplateSearch] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
@@ -295,13 +295,15 @@ export function TemplateManager() {
   return (
     <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
       <div>
-        <h2 className="text-xl font-semibold">Plantillas guardadas</h2>
+        <h2 className="text-xl font-semibold">Formatos disponibles</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Administra los registros de plantillas que se guardan en MySQL.
+          {isAdmin
+            ? "Administra las plantillas y selecciona un formato para usarlo."
+            : "Selecciona un formato para llenar sus campos y generar el documento."}
         </p>
       </div>
 
-      {!selectedTemplate && <form
+      {!selectedTemplate && isAdmin && <form
             className="grid min-w-0 gap-4 sm:grid-cols-2"
         onSubmit={handleCreateTemplate}
       >
@@ -415,8 +417,10 @@ export function TemplateManager() {
                   <h3 className="font-semibold text-slate-900">
                     {template.name}
                   </h3>
-                  <p className="mt-1 break-all text-sm text-slate-600">
-                    {template.filePath}
+                  <p className="mt-1 text-sm text-slate-600">
+                    {template.filePath.toLowerCase().endsWith(".xlsx")
+                      ? "Formato Excel"
+                      : "Formato Word"}
                   </p>
                   {template.description && (
                     <p className="mt-1 text-sm text-slate-500">
@@ -433,13 +437,15 @@ export function TemplateManager() {
                   >
                     Usar
                   </button>
-                  <button
-                    className="flex-1 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 sm:flex-none"
-                    type="button"
-                    onClick={() => void handleDeleteTemplate(template.id)}
-                  >
-                    Eliminar
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className="flex-1 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 sm:flex-none"
+                      type="button"
+                      onClick={() => void handleDeleteTemplate(template.id)}
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </div>
               </article>
               ))

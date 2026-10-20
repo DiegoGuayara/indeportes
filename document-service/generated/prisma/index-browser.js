@@ -24,12 +24,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 7.10.0
- * Query Engine version: 0edf323efd1d98336f3f0a68684b56f689b900d3
+ * Prisma Client JS version: 7.10.1
+ * Query Engine version: d1b3f377ca835d73fd50954a5e22128b9ebdd6b8
  */
 Prisma.prismaVersion = {
-  client: "7.10.0",
-  engine: "0edf323efd1d98336f3f0a68684b56f689b900d3"
+  client: "7.10.1",
+  engine: "d1b3f377ca835d73fd50954a5e22128b9ebdd6b8"
 }
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -145,6 +145,17 @@ exports.Prisma.GeneratedDocumentScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.UserScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  passwordHash: 'passwordHash',
+  role: 'role',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -171,11 +182,21 @@ exports.Prisma.GeneratedDocumentOrderByRelevanceFieldEnum = {
   filePath: 'filePath'
 };
 
+exports.Prisma.UserOrderByRelevanceFieldEnum = {
+  name: 'name',
+  email: 'email',
+  passwordHash: 'passwordHash'
+};
+exports.UserRole = exports.$Enums.UserRole = {
+  ADMIN: 'ADMIN',
+  USER: 'USER'
+};
 
 exports.Prisma.ModelName = {
   Template: 'Template',
   TemplateField: 'TemplateField',
-  GeneratedDocument: 'GeneratedDocument'
+  GeneratedDocument: 'GeneratedDocument',
+  User: 'User'
 };
 
 /**

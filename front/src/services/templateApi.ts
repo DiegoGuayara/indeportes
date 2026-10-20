@@ -1,4 +1,4 @@
-import { API_URL } from "./api";
+import { API_URL, apiFetch } from "./api";
 
 export type TemplateField = {
   id: number;
@@ -34,7 +34,7 @@ export type CreateTemplatePayload = {
 };
 
 export const getTemplates = async () => {
-  const response = await fetch(`${API_URL}/templates`);
+  const response = await apiFetch(`${API_URL}/templates`);
 
   if (!response.ok) {
     throw new Error("No se pudieron cargar las plantillas");
@@ -44,7 +44,7 @@ export const getTemplates = async () => {
 };
 
 export const getTemplateById = async (id: number) => {
-  const response = await fetch(`${API_URL}/templates/${id}`);
+  const response = await apiFetch(`${API_URL}/templates/${id}`);
 
   if (!response.ok) {
     throw new Error("No se pudo cargar la plantilla");
@@ -62,7 +62,7 @@ export const createTemplate = async (payload: CreateTemplatePayload) => {
     formData.append("description", payload.description);
   }
 
-  const response = await fetch(`${API_URL}/templates`, {
+  const response = await apiFetch(`${API_URL}/templates`, {
     method: "POST",
     body: formData,
   });
@@ -75,7 +75,7 @@ export const createTemplate = async (payload: CreateTemplatePayload) => {
 };
 
 export const deleteTemplate = async (id: number) => {
-  const response = await fetch(`${API_URL}/templates/${id}`, {
+  const response = await apiFetch(`${API_URL}/templates/${id}`, {
     method: "DELETE",
   });
 
@@ -88,7 +88,7 @@ export const generateDocumentFromTemplate = async (
   id: number,
   values: Record<string, unknown>,
 ) => {
-  const response = await fetch(`${API_URL}/templates/${id}/generate`, {
+  const response = await apiFetch(`${API_URL}/templates/${id}/generate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -108,7 +108,7 @@ export const previewDocumentFromTemplate = async (
   values: Record<string, unknown>,
   signal: AbortSignal,
 ) => {
-  const response = await fetch(`${API_URL}/templates/${id}/preview`, {
+  const response = await apiFetch(`${API_URL}/templates/${id}/preview`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
