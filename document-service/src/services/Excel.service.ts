@@ -6,7 +6,8 @@ type RepeatingRowPlan = {
   rowNumber: number;
   groupName: string;
   rows: RepeatingRow[];
-  removedRows: number;
+  capacityRows: number;
+  insertedRows: number;
 };
 
 export class ExcelService {
@@ -71,7 +72,8 @@ export class ExcelService {
         rowNumber,
         groupName,
         rows: rows.length > 0 ? rows : [{}],
-        removedRows: 0,
+        capacityRows: 1,
+        insertedRows: 0,
       });
     });
 
@@ -105,16 +107,17 @@ export class ExcelService {
   private fillRepeatingRow(
     worksheet: ExcelJS.Worksheet,
     rowNumber: number,
+    templateRowNumber: number,
     groupName: string,
     rowValues: RepeatingRow,
     values: Record<string, unknown>,
   ) {
-    worksheet.getRow(rowNumber).eachCell({ includeEmpty: false }, (cell) => {
+    worksheet.getRow(templateRowNumber).eachCell({ includeEmpty: false }, (cell) => {
       if (typeof cell.value !== "string") {
         return;
       }
 
-      cell.value = cell.value.replace(
+      worksheet.getRow(rowNumber).getCell(cell.col).value = cell.value.replace(
         this.tagRegex,
         (_tag, fieldPath: string) => {
           const [fieldGroup, ...fieldParts] = fieldPath.split(".");
@@ -135,9 +138,8 @@ export class ExcelService {
     rowOffset: number,
   ) {
     const templateRow = plan.rowNumber + rowOffset;
-    const oldLastRow = templateRow + plan.removedRows;
-    const newLastRow = templateRow + plan.rows.length - 1;
-    const rowDelta = plan.rows.length - 1 - plan.removedRows;
+    const oldLastRow = templateRow + plan.capacityRows - 1;
+    const rowDelta = plan.insertedRows;
     const cellOrRangeRegex =
       /(?<![A-Za-z0-9_.])(\$?[A-Z]{1,3}\$?)(\d+)(?::(\$?[A-Z]{1,3}\$?)(\d+))?(?![A-Za-z0-9_])(?!\s*\()/gi;
 
@@ -148,30 +150,17 @@ export class ExcelService {
         let endRow = endRowText === undefined ? undefined : Number(endRowText);
 
         if (endRow !== undefined) {
-          if (startRow <= templateRow && endRow >= templateRow && endRow <= oldLastRow) {
-            endRow = newLastRow;
+          if (rowDelta > 0 && startRow <= templateRow && endRow >= oldLastRow) {
+            endRow += rowDelta;
           } else {
-            if (startRow > oldLastRow) {
-              startRow += rowDelta;
-            } else if (startRow > templateRow) {
-              startRow = templateRow;
-            }
-
-            if (endRow > oldLastRow) {
-              endRow += rowDelta;
-            } else if (endRow > templateRow) {
-              endRow = newLastRow;
-            }
+            if (startRow > oldLastRow) startRow += rowDelta;
+            if (endRow > oldLastRow) endRow += rowDelta;
           }
 
           return `${startColumn}${startRow}:${endColumn}${endRow}`;
         }
 
-        if (startRow > oldLastRow) {
-          startRow += rowDelta;
-        } else if (startRow > templateRow) {
-          startRow = newLastRow;
-        }
+        if (startRow > oldLastRow) startRow += rowDelta;
 
         return `${startColumn}${startRow}`;
       },
@@ -202,12 +191,45 @@ export class ExcelService {
 
         for (const plan of orderedPlans) {
           formula = this.adjustFormulaForRowExpansion(formula, plan, rowOffset);
-          rowOffset += plan.rows.length - 1 - plan.removedRows;
+          rowOffset += plan.insertedRows;
         }
 
         cell.value = { ...cellValue, formula };
       });
     });
+  }
+
+  private updateWorksheetLayout(
+    worksheet: ExcelJS.Worksheet,
+    plans: RepeatingRowPlan[],
+  ) {
+    const orderedPlans = [...plans].sort((left, right) => left.rowNumber - right.rowNumber);
+    let rowOffset = 0;
+    let printArea = worksheet.pageSetup.printArea;
+
+    for (const plan of orderedPlans) {
+      if (printArea && plan.insertedRows > 0) {
+        printArea = this.adjustFormulaForRowExpansion(printArea, plan, rowOffset);
+      }
+
+      if (plan.insertedRows > 0) {
+        const insertionAfterRow = plan.rowNumber + rowOffset + plan.capacityRows - 1;
+        for (const image of worksheet.getImages()) {
+          if (image.range.tl.row >= insertionAfterRow) {
+            image.range.tl.row += plan.insertedRows;
+          }
+          if (image.range.br.row >= insertionAfterRow) {
+            image.range.br.row += plan.insertedRows;
+          }
+        }
+      }
+
+      rowOffset += plan.insertedRows;
+    }
+
+    if (printArea) {
+      worksheet.pageSetup.printArea = printArea;
+    }
   }
 
   async findTemplateFields(buffer: Buffer): Promise<string[]> {
@@ -252,20 +274,19 @@ export class ExcelService {
           nextRow += 1;
         }
 
-        plan.removedRows = blankRows;
+        plan.capacityRows = blankRows + 1;
+        plan.insertedRows = Math.max(0, plan.rows.length - plan.capacityRows);
 
-        if (blankRows > 0) {
-          worksheet.spliceRows(plan.rowNumber + 1, blankRows);
-        }
-
-        if (plan.rows.length > 1) {
-          worksheet.duplicateRow(plan.rowNumber, plan.rows.length - 1, true);
+        if (plan.insertedRows > 0) {
+          const lastCapacityRow = plan.rowNumber + plan.capacityRows - 1;
+          worksheet.duplicateRow(lastCapacityRow, plan.insertedRows, true);
         }
 
         plan.rows.forEach((rowValues, index) => {
           this.fillRepeatingRow(
             worksheet,
             plan.rowNumber + index,
+            plan.rowNumber,
             plan.groupName,
             rowValues,
             values,
@@ -289,6 +310,7 @@ export class ExcelService {
       });
 
       this.updateWorksheetFormulas(worksheet, plans);
+      this.updateWorksheetLayout(worksheet, plans);
     });
 
     workbook.calcProperties.fullCalcOnLoad = true;
