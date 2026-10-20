@@ -8,11 +8,18 @@ type RepeatingRowPlan = {
   rows: RepeatingRow[];
   capacityRows: number;
   insertedRows: number;
+  merges: RepeatingMergeTemplate[];
+  rowHeight: number | undefined;
 };
 
 type RepeatingCellTemplate = {
   column: number | string;
   value: string;
+};
+
+type RepeatingMergeTemplate = {
+  firstColumn: number;
+  lastColumn: number;
 };
 
 export class ExcelService {
@@ -71,6 +78,7 @@ export class ExcelService {
       const rows = Array.isArray(groupValue)
         ? (groupValue as RepeatingRow[])
         : [];
+      const merges = this.getRowMergeTemplates(worksheet, rowNumber);
 
       // Keep one blank data row when no records were entered.
       plans.push({
@@ -79,10 +87,79 @@ export class ExcelService {
         rows: rows.length > 0 ? rows : [{}],
         capacityRows: 1,
         insertedRows: 0,
+        merges,
+        rowHeight: worksheet.getRow(rowNumber).height,
       });
     });
 
     return plans;
+  }
+
+  private getRowMergeTemplates(
+    worksheet: ExcelJS.Worksheet,
+    rowNumber: number,
+  ): RepeatingMergeTemplate[] {
+    const merges: RepeatingMergeTemplate[] = [];
+    const row = worksheet.getRow(rowNumber);
+
+    for (let column = 1; column <= worksheet.columnCount; column += 1) {
+      const cell = row.getCell(column);
+
+      if (!cell.isMerged || cell.master.address !== cell.address) {
+        continue;
+      }
+
+      let lastColumn = column;
+      while (lastColumn < worksheet.columnCount) {
+        const nextCell = row.getCell(lastColumn + 1);
+        if (!nextCell.isMerged || nextCell.master.address !== cell.address) {
+          break;
+        }
+        lastColumn += 1;
+      }
+
+      if (lastColumn > column) {
+        merges.push({ firstColumn: column, lastColumn });
+        column = lastColumn;
+      }
+    }
+
+    return merges;
+  }
+
+  private applyRepeatingRowLayout(
+    worksheet: ExcelJS.Worksheet,
+    plan: RepeatingRowPlan,
+  ) {
+    const rowCount = plan.capacityRows + plan.insertedRows;
+
+    for (let rowOffset = 1; rowOffset < rowCount; rowOffset += 1) {
+      const rowNumber = plan.rowNumber + rowOffset;
+      const row = worksheet.getRow(rowNumber);
+
+      if (rowOffset >= plan.capacityRows && plan.rowHeight !== undefined) {
+        row.height = plan.rowHeight;
+      }
+
+      for (const merge of plan.merges) {
+        const firstCell = worksheet.getCell(rowNumber, merge.firstColumn);
+        const lastCell = worksheet.getCell(rowNumber, merge.lastColumn);
+        const alreadyMerged =
+          firstCell.isMerged &&
+          lastCell.isMerged &&
+          firstCell.master.address === lastCell.master.address &&
+          firstCell.master.address === firstCell.address;
+
+        if (!alreadyMerged) {
+          worksheet.mergeCells(
+            rowNumber,
+            merge.firstColumn,
+            rowNumber,
+            merge.lastColumn,
+          );
+        }
+      }
+    }
   }
 
   private rowHasContent(worksheet: ExcelJS.Worksheet, rowNumber: number) {
@@ -282,6 +359,8 @@ export class ExcelService {
           const lastCapacityRow = plan.rowNumber + plan.capacityRows - 1;
           worksheet.duplicateRow(lastCapacityRow, plan.insertedRows, true);
         }
+
+        this.applyRepeatingRowLayout(worksheet, plan);
 
         const templateCells: RepeatingCellTemplate[] = [];
         worksheet.getRow(plan.rowNumber).eachCell({ includeEmpty: false }, (cell) => {
