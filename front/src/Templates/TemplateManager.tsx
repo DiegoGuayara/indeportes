@@ -301,7 +301,7 @@ export function TemplateManager() {
         </p>
       </div>
 
-      <form
+      {!selectedTemplate && <form
             className="grid min-w-0 gap-4 sm:grid-cols-2"
         onSubmit={handleCreateTemplate}
       >
@@ -367,7 +367,7 @@ export function TemplateManager() {
             {saving ? "Guardando..." : "Crear plantilla"}
           </button>
         </div>
-      </form>
+      </form>}
 
       {error && (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -375,7 +375,7 @@ export function TemplateManager() {
         </p>
       )}
 
-      <div className="border-t border-slate-100 pt-5">
+      {!selectedTemplate && <div className="border-t border-slate-100 pt-5">
         {loading ? (
           <p className="text-sm text-slate-600">Cargando plantillas...</p>
         ) : templates.length === 0 ? (
@@ -446,16 +446,24 @@ export function TemplateManager() {
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {selectedTemplate && (
         <div className="flex flex-col gap-5 rounded-md bg-slate-50 p-3 sm:p-4">
-          <div>
-            <h3 className="font-semibold">Usar plantilla</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Llena los campos detectados y genera un documento desde la
-              plantilla guardada.
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="font-semibold">{selectedTemplate.name}</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Llena los campos y genera el documento desde esta plantilla.
+              </p>
+            </div>
+            <button
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 sm:w-auto"
+              type="button"
+              onClick={() => setSelectedTemplate(null)}
+            >
+              Volver a formatos
+            </button>
           </div>
 
           {(selectedTemplate.fields?.length ?? 0) > 0 ? (
@@ -597,29 +605,6 @@ export function TemplateManager() {
             <PdfPreviewPanel {...preview} />
           )}
 
-          <h3 className="font-semibold">Detalle de plantilla</h3>
-          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="font-medium text-slate-700">ID</dt>
-              <dd className="text-slate-600">{selectedTemplate.id}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-700">Archivo</dt>
-              <dd className="text-slate-600">{selectedTemplate.filePath}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-700">Campos</dt>
-              <dd className="text-slate-600">
-                {selectedTemplate.fields?.length ?? 0}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-700">Documentos</dt>
-              <dd className="text-slate-600">
-                {selectedTemplate.documents?.length ?? 0}
-              </dd>
-            </div>
-          </dl>
         </div>
       )}
     </section>
