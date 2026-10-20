@@ -10,6 +10,11 @@ type RepeatingRowPlan = {
   insertedRows: number;
 };
 
+type RepeatingCellTemplate = {
+  column: number | string;
+  value: string;
+};
+
 export class ExcelService {
   private readonly tagRegex = /\{\{\s*([\p{L}\p{N}_.-]+)\s*\}\}/gu;
 
@@ -107,17 +112,13 @@ export class ExcelService {
   private fillRepeatingRow(
     worksheet: ExcelJS.Worksheet,
     rowNumber: number,
-    templateRowNumber: number,
+    templateCells: RepeatingCellTemplate[],
     groupName: string,
     rowValues: RepeatingRow,
     values: Record<string, unknown>,
   ) {
-    worksheet.getRow(templateRowNumber).eachCell({ includeEmpty: false }, (cell) => {
-      if (typeof cell.value !== "string") {
-        return;
-      }
-
-      worksheet.getRow(rowNumber).getCell(cell.col).value = cell.value.replace(
+    templateCells.forEach(({ column, value }) => {
+      worksheet.getRow(rowNumber).getCell(column).value = value.replace(
         this.tagRegex,
         (_tag, fieldPath: string) => {
           const [fieldGroup, ...fieldParts] = fieldPath.split(".");
@@ -282,11 +283,18 @@ export class ExcelService {
           worksheet.duplicateRow(lastCapacityRow, plan.insertedRows, true);
         }
 
+        const templateCells: RepeatingCellTemplate[] = [];
+        worksheet.getRow(plan.rowNumber).eachCell({ includeEmpty: false }, (cell) => {
+          if (typeof cell.value === "string") {
+            templateCells.push({ column: cell.col, value: cell.value });
+          }
+        });
+
         plan.rows.forEach((rowValues, index) => {
           this.fillRepeatingRow(
             worksheet,
             plan.rowNumber + index,
-            plan.rowNumber,
+            templateCells,
             plan.groupName,
             rowValues,
             values,
