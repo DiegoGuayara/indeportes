@@ -1,12 +1,14 @@
 import { TemplateRepository } from "../repository/Template.Repository.js";
 import { ExcelService } from "./Excel.service.js";
 import { WordService } from "./Word.service.js";
+import { PdfPreviewService } from "./PdfPreview.service.js";
 
 export class TemplateService {
   constructor(
     private readonly templateRepository: TemplateRepository,
     private readonly wordService: WordService,
     private readonly excelService: ExcelService,
+    private readonly pdfPreviewService: PdfPreviewService,
   ) {}
 
   async getAll() {
@@ -84,6 +86,27 @@ export class TemplateService {
     });
 
     return { buffer: documentBuffer, extension };
+  }
+
+  async previewDocument(id: number, values: Record<string, unknown>) {
+    const template = await this.templateRepository.findById(id);
+
+    if (!template) {
+      throw new Error("La plantilla no existe");
+    }
+
+    const templateBuffer = await this.templateRepository.readTemplateFile(
+      template.filePath,
+    );
+    const isExcel = template.filePath.toLowerCase().endsWith(".xlsx");
+    const documentBuffer = isExcel
+      ? await this.excelService.generateDocument(templateBuffer, values)
+      : this.wordService.generateDocument(templateBuffer, values);
+
+    return await this.pdfPreviewService.convert(
+      documentBuffer,
+      isExcel ? "xlsx" : "docx",
+    );
   }
 
   async delete(id: number) {

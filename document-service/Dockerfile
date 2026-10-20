@@ -1,5 +1,7 @@
 FROM node:22-alpine
 
+RUN apk add --no-cache libreoffice-writer libreoffice-calc font-liberation
+
 WORKDIR /app
 
 COPY package*.json ./

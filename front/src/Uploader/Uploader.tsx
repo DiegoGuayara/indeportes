@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { TemplateManager } from "../Templates/TemplateManager";
-import { analyzeDocument, generateDocument } from "../services/documentApi";
+import { PdfPreviewPanel } from "../components/PdfPreviewPanel";
+import { usePdfPreview } from "../hooks/usePdfPreview";
+import { analyzeDocument, generateDocument, previewDocument } from "../services/documentApi";
 
 const formatFieldLabel = (field: string) =>
   field
@@ -41,6 +43,14 @@ export function Uploader() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const previewRequest = useCallback(
+    (signal: AbortSignal) =>
+      file
+        ? previewDocument(file, { ...values, ...repeatingValues }, signal)
+        : Promise.reject(new Error("Selecciona una plantilla")),
+    [file, values, repeatingValues],
+  );
+  const preview = usePdfPreview(file && fields.length > 0 ? previewRequest : null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -386,6 +396,8 @@ export function Uploader() {
                 {generating ? "Generando..." : "Generar documento"}
               </button>
             </div>
+
+            <PdfPreviewPanel {...preview} />
           </section>
         )}
 

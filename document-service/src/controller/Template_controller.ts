@@ -3,6 +3,7 @@ import { TemplateService } from "../services/Template.service.js";
 import { TemplateRepository } from "../repository/Template.Repository.js";
 import { WordService } from "../services/Word.service.js";
 import { ExcelService } from "../services/Excel.service.js";
+import { PdfPreviewService } from "../services/PdfPreview.service.js";
 
 export class TemplateController {
   private readonly templateService: TemplateService;
@@ -11,10 +12,12 @@ export class TemplateController {
     const templateRepository = new TemplateRepository();
     const wordService = new WordService();
     const excelService = new ExcelService();
+    const pdfPreviewService = new PdfPreviewService();
     this.templateService = new TemplateService(
       templateRepository,
       wordService,
       excelService,
+      pdfPreviewService,
     );
   }
 
@@ -127,6 +130,38 @@ export class TemplateController {
           error instanceof Error
             ? error.message
             : "Error al generar documento desde plantilla",
+      });
+    }
+  }
+
+  async preview(req: Request, res: Response): Promise<void> {
+    try {
+      const id = Number(req.params.id);
+
+      if (Number.isNaN(id)) {
+        res.status(400).json({ message: "El ID de la plantilla no es válido" });
+        return;
+      }
+
+      const values = req.body.values as Record<string, unknown> | undefined;
+
+      if (!values) {
+        res.status(400).json({ message: "No se enviaron los valores" });
+        return;
+      }
+
+      const pdf = await this.templateService.previewDocument(id, values);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", 'inline; filename="vista-previa.pdf"');
+      res.setHeader("Cache-Control", "no-store");
+      res.send(pdf);
+    } catch (error) {
+      console.error("Error al generar vista previa de plantilla:", error);
+      res.status(500).json({
+        message:
+          error instanceof Error
+            ? error.message
+            : "No se pudo generar la vista previa",
       });
     }
   }

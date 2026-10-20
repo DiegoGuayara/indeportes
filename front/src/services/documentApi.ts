@@ -40,3 +40,25 @@ export const generateDocument = async (
   return response.blob();
 };
 
+export const previewDocument = async (
+  file: File,
+  values: Record<string, unknown>,
+  signal: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append("template", file);
+  formData.append("values", JSON.stringify(values));
+
+  const response = await fetch(`${API_URL}/documents/preview`, {
+    method: "POST",
+    body: formData,
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo generar la vista previa");
+  }
+
+  return response.blob();
+};
+

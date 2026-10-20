@@ -103,3 +103,24 @@ export const generateDocumentFromTemplate = async (
   return response.blob();
 };
 
+export const previewDocumentFromTemplate = async (
+  id: number,
+  values: Record<string, unknown>,
+  signal: AbortSignal,
+) => {
+  const response = await fetch(`${API_URL}/templates/${id}/preview`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ values }),
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo generar la vista previa");
+  }
+
+  return response.blob();
+};
+

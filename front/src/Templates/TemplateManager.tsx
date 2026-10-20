@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { PdfPreviewPanel } from "../components/PdfPreviewPanel";
+import { usePdfPreview } from "../hooks/usePdfPreview";
 import {
   createTemplate,
   deleteTemplate,
   generateDocumentFromTemplate,
+  previewDocumentFromTemplate,
   getTemplateById,
   getTemplates,
   type Template,
@@ -66,6 +69,22 @@ export function TemplateManager() {
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const previewRequest = useCallback(
+    (signal: AbortSignal) =>
+      selectedTemplate
+        ? previewDocumentFromTemplate(
+            selectedTemplate.id,
+            { ...templateValues, ...repeatingValues },
+            signal,
+          )
+        : Promise.reject(new Error("Selecciona una plantilla")),
+    [selectedTemplate?.id, templateValues, repeatingValues],
+  );
+  const preview = usePdfPreview(
+    selectedTemplate && (selectedTemplate.fields?.length ?? 0) > 0
+      ? previewRequest
+      : null,
+  );
 
   const loadTemplates = async () => {
     setLoading(true);
@@ -573,6 +592,10 @@ export function TemplateManager() {
               {generating ? "Generando..." : "Generar documento"}
             </button>
           </div>
+
+          {(selectedTemplate.fields?.length ?? 0) > 0 && (
+            <PdfPreviewPanel {...preview} />
+          )}
 
           <h3 className="font-semibold">Detalle de plantilla</h3>
           <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
