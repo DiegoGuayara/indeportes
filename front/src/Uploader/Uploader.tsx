@@ -38,6 +38,7 @@ const buildEmptyGroupRow = (fields: string[]) =>
 export function Uploader({ isAdmin }: { isAdmin: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [fields, setFields] = useState<string[]>([]);
+  const [analyzed, setAnalyzed] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [repeatingValues, setRepeatingValues] = useState<RepeatingValues>({});
   const [loading, setLoading] = useState(false);
@@ -66,6 +67,7 @@ export function Uploader({ isAdmin }: { isAdmin: boolean }) {
     setError("");
     setFile(selectedFile);
     setFields([]);
+    setAnalyzed(false);
     setValues({});
     setRepeatingValues({});
   };
@@ -81,17 +83,8 @@ export function Uploader({ isAdmin }: { isAdmin: boolean }) {
 
     try {
       const data = await analyzeDocument(file);
-
-      if (data.fields.length === 0) {
-        setFields([]);
-        setValues({});
-        setError(
-          "No se encontraron campos. Usa marcadores como {{nombre}} o {{numero_identificacion}} sin espacios ni tildes.",
-        );
-        return;
-      }
-
       setFields(data.fields);
+      setAnalyzed(true);
       const simpleFields = getSimpleFields(data.fields);
       const repeatingGroups = getRepeatingGroups(data.fields);
 
@@ -259,16 +252,20 @@ export function Uploader({ isAdmin }: { isAdmin: boolean }) {
           )}
         </section>
 
-        {fields.length > 0 && (
+        {analyzed && (
           <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div>
-              <h2 className="text-xl font-semibold">Campos encontrados</h2>
+              <h2 className="text-xl font-semibold">
+                {fields.length > 0 ? "Campos encontrados" : "Documento listo"}
+              </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Completa la información que se reemplazará en la plantilla.
+                {fields.length > 0
+                  ? "Completa la información que se reemplazará en la plantilla."
+                  : "No se encontraron marcadores. Puedes descargar una copia del documento seleccionado."}
               </p>
             </div>
 
-            <div className="flex flex-col gap-5">
+            {fields.length > 0 && <div className="flex flex-col gap-5">
               {getSimpleFields(fields).length > 0 && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   {getSimpleFields(fields).map((field) => (
@@ -384,7 +381,7 @@ export function Uploader({ isAdmin }: { isAdmin: boolean }) {
                   </div>
                 ),
               )}
-            </div>
+            </div>}
 
             <div className="flex justify-end border-t border-slate-100 pt-5">
               <button
@@ -397,7 +394,7 @@ export function Uploader({ isAdmin }: { isAdmin: boolean }) {
               </button>
             </div>
 
-            <PdfPreviewPanel {...preview} />
+            {fields.length > 0 && <PdfPreviewPanel {...preview} />}
           </section>
         )}
 

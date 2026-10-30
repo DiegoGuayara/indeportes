@@ -600,7 +600,7 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
             <button
               className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
               type="button"
-              disabled={generating || (selectedTemplate.fields?.length ?? 0) === 0}
+              disabled={generating}
               onClick={() => void handleGenerateFromTemplate()}
             >
               {generating ? "Generando..." : "Generar documento"}
