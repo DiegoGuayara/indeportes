@@ -13,14 +13,15 @@ import {
 } from "../services/templateApi";
 
 type TemplateForm = {
-  name: string;
   description: string;
 };
 
 const initialForm: TemplateForm = {
-  name: "",
   description: "",
 };
+
+type PendingTemplate = { file: File; name: string };
+const MAX_TEMPLATES_PER_UPLOAD = 10;
 
 type RepeatingValues = Record<string, Array<Record<string, string>>>;
 
@@ -60,7 +61,7 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
     null,
   );
   const [form, setForm] = useState<TemplateForm>(initialForm);
-  const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [pendingTemplates, setPendingTemplates] = useState<PendingTemplate[]>([]);
   const [templateValues, setTemplateValues] = useState<Record<string, string>>(
     {},
   );
@@ -114,34 +115,51 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
   const handleCreateTemplate = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!form.name.trim() || !templateFile) {
-      setError("El nombre y un archivo .docx o .xlsx son obligatorios");
+    if (pendingTemplates.length === 0) {
+      setError("Selecciona al menos un archivo .docx o .xlsx");
       return;
     }
 
-    if (!/\.(docx|xlsx)$/i.test(templateFile.name)) {
-      setError("Solo puedes guardar plantillas .docx o .xlsx");
+    if (pendingTemplates.some(({ name }) => !name.trim())) {
+      setError("Escribe un nombre para cada plantilla");
       return;
     }
 
     setSaving(true);
     setError("");
 
-    try {
-      await createTemplate({
-        name: form.name,
-        description: form.description || undefined,
-        file: templateFile,
-      });
+    const results = await Promise.allSettled(
+      pendingTemplates.map(({ file, name }) =>
+        createTemplate({ name: name.trim(), description: form.description || undefined, file }),
+      ),
+    );
+    const failed = pendingTemplates.filter((_, index) => results[index]?.status === "rejected");
+    const succeeded = pendingTemplates.filter((_, index) => results[index]?.status === "fulfilled");
 
+    if (succeeded.length > 0) {
+      setPendingTemplates(failed);
       setForm(initialForm);
-      setTemplateFile(null);
       await loadTemplates();
-    } catch (error) {
-      setError("No se pudo crear la plantilla");
-    } finally {
-      setSaving(false);
     }
+    if (failed.length > 0) {
+      setError(`Se guardaron ${succeeded.length} plantilla(s). No se pudieron guardar: ${failed.map(({ file }) => file.name).join(", ")}.`);
+    }
+    setSaving(false);
+  };
+
+  const handleTemplateFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    const validFiles = files.filter((file) => /\.(docx|xlsx)$/i.test(file.name));
+    const slots = MAX_TEMPLATES_PER_UPLOAD - pendingTemplates.length;
+    const accepted = validFiles.slice(0, Math.max(0, slots)).map((file) => ({
+      file,
+      name: file.name.replace(/\.[^.]+$/, ""),
+    }));
+    setPendingTemplates((current) => [...current, ...accepted]);
+    if (validFiles.length !== files.length) setError("Se omitieron archivos que no son .docx o .xlsx.");
+    else if (validFiles.length > slots) setError(`Puedes preparar hasta ${MAX_TEMPLATES_PER_UPLOAD} plantillas a la vez.`);
+    else setError("");
   };
 
   const handleSelectTemplate = async (id: number) => {
@@ -308,20 +326,6 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
         onSubmit={handleCreateTemplate}
       >
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="name">
-            Nombre
-          </label>
-          <input
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            id="name"
-            type="text"
-            value={form.name}
-            onChange={(event) => handleInputChange("name", event.target.value)}
-            placeholder="Certificado deportivo"
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
           <label
             className="text-sm font-medium text-slate-700"
             htmlFor="templateFile"
@@ -333,14 +337,29 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
             id="templateFile"
             type="file"
             accept=".docx,.xlsx"
-            onChange={(event) =>
-              setTemplateFile(event.target.files?.[0] ?? null)
-            }
+            multiple
+            disabled={saving || pendingTemplates.length >= MAX_TEMPLATES_PER_UPLOAD}
+            onChange={handleTemplateFilesChange}
           />
-          {templateFile && (
-            <p className="text-xs text-slate-500">{templateFile.name}</p>
-          )}
+          <p className="text-xs text-slate-500">
+            Selecciona hasta {MAX_TEMPLATES_PER_UPLOAD} archivos. Puedes editar el nombre de cada plantilla antes de guardarla.
+          </p>
         </div>
+
+        {pendingTemplates.length > 0 && (
+          <div className="flex flex-col gap-3 sm:col-span-2">
+            {pendingTemplates.map(({ file, name }, index) => (
+              <div className="grid gap-2 rounded-md border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end" key={`${file.name}-${file.size}-${index}`}>
+                <p className="break-all text-sm text-slate-600">{file.name}</p>
+                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                  Nombre de la plantilla
+                  <input className="rounded-md border border-slate-300 px-3 py-2 font-normal" type="text" value={name} onChange={(event) => setPendingTemplates((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} />
+                </label>
+                <button className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50" type="button" onClick={() => setPendingTemplates((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Quitar</button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex flex-col gap-2 sm:col-span-2">
           <label
@@ -366,7 +385,7 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
             type="submit"
             disabled={saving}
           >
-            {saving ? "Guardando..." : "Crear plantilla"}
+            {saving ? "Guardando..." : `Guardar ${pendingTemplates.length || "plantillas"}`}
           </button>
         </div>
       </form>}
