@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   createUser,
+  deleteUser,
   getUsers,
   setUserAccess,
   updateOwnCredentials,
@@ -74,6 +75,23 @@ export function UserManagement({ currentUser, onBack, onUserUpdated }: UserManag
       await loadUsers();
     } catch (accessError) {
       setError(accessError instanceof Error ? accessError.message : "No se pudo actualizar el acceso");
+    }
+  };
+
+  const handleDeleteUser = async (user: ManagedUser) => {
+    const confirmed = window.confirm(
+      `¿Eliminar la cuenta de ${user.email}? Esta acción no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+
+    setError("");
+    setMessage("");
+    try {
+      await deleteUser(user.id);
+      setMessage(`Se eliminó la cuenta ${user.email}.`);
+      await loadUsers();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "No se pudo eliminar el usuario");
     }
   };
 
@@ -181,14 +199,24 @@ export function UserManagement({ currentUser, onBack, onUserUpdated }: UserManag
                   {user.role === "ADMIN" ? "Administrador" : "Usuario"} · {user.active ? "Acceso activo" : "Acceso retirado"}
                 </p>
               </div>
-              <button
-                className={`rounded-md border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${user.active ? "border-red-200 text-red-700 hover:bg-red-50" : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}
-                type="button"
-                disabled={user.id === currentUser.id || (user.role === "ADMIN" && user.active && users.filter((item) => item.role === "ADMIN" && item.active).length <= 1)}
-                onClick={() => void handleAccessChange(user)}
-              >
-                {user.active ? "Retirar acceso" : "Dar acceso"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className={`rounded-md border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${user.active ? "border-red-200 text-red-700 hover:bg-red-50" : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}
+                  type="button"
+                  disabled={user.id === currentUser.id || (user.role === "ADMIN" && user.active && users.filter((item) => item.role === "ADMIN" && item.active).length <= 1)}
+                  onClick={() => void handleAccessChange(user)}
+                >
+                  {user.active ? "Retirar acceso" : "Dar acceso"}
+                </button>
+                <button
+                  className="rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                  disabled={user.id === currentUser.id || (user.role === "ADMIN" && user.active && users.filter((item) => item.role === "ADMIN" && item.active).length <= 1)}
+                  onClick={() => void handleDeleteUser(user)}
+                >
+                  Eliminar
+                </button>
+              </div>
             </article>
           ))}
         </div>

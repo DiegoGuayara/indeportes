@@ -106,4 +106,22 @@ export class AuthController {
       }
     }
   }
+
+  async deleteUser(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.authUser) {
+        res.status(401).json({ message: "Inicia sesión para continuar" });
+        return;
+      }
+      await authService.deleteUser(Number(req.params.id), req.authUser.id);
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof AuthError) {
+        res.status(400).json({ message: error.message });
+      } else {
+        console.error("Error al eliminar usuario:", error);
+        res.status(500).json({ message: "No se pudo eliminar el usuario" });
+      }
+    }
+  }
 }

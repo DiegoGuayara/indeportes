@@ -185,6 +185,21 @@ export class AuthService {
     );
     return this.toSafeUser(updated);
   }
+
+  async deleteUser(id: number, actingUserId: number) {
+    if (!Number.isInteger(id) || id < 1) throw new AuthError("Usuario no válido");
+    if (id === actingUserId) {
+      throw new AuthError("No puedes eliminar la cuenta con la que iniciaste sesión");
+    }
+
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new AuthError("El usuario no existe");
+    if (user.role === "ADMIN" && user.active && (await this.userRepository.countActiveAdmins()) <= 1) {
+      throw new AuthError("Debe permanecer al menos una cuenta administradora activa");
+    }
+
+    await this.userRepository.delete(id);
+  }
 }
 
 export const authService = new AuthService();

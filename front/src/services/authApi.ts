@@ -88,3 +88,12 @@ export async function updateOwnCredentials(input: {
   }
   return (await response.json() as { user: AuthUser }).user;
 }
+
+export async function deleteUser(id: number) {
+  const response = await apiFetch(`${API_URL}/auth/users/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response, "No se pudo eliminar el usuario"));
+  }
+}

@@ -20,5 +20,6 @@ router.patch("/me/credentials", authenticate, controller.updateOwnCredentials.bi
 router.get("/users", authenticate, requireAdmin, controller.listUsers.bind(controller));
 router.post("/users", authenticate, requireAdmin, controller.createUser.bind(controller));
 router.patch("/users/:id/access", authenticate, requireAdmin, controller.setUserAccess.bind(controller));
+router.delete("/users/:id", authenticate, requireAdmin, controller.deleteUser.bind(controller));
 
 export default router;

@@ -47,4 +47,8 @@ export class UserRepository {
       data: { email, passwordHash },
     });
   }
+
+  delete(id: number) {
+    return prisma.user.delete({ where: { id } });
+  }
 }
