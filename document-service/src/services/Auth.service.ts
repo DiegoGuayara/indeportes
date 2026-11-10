@@ -154,6 +154,37 @@ export class AuthService {
     const updated = await this.userRepository.updateAccess(id, active);
     return this.toSafeUser(updated);
   }
+
+  async updateOwnCredentials(
+    userId: number,
+    input: { currentPassword: string; email: string; newPassword: string },
+  ) {
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.active) throw new AuthError("La cuenta no está disponible");
+    if (!(await bcrypt.compare(input.currentPassword, user.passwordHash))) {
+      throw new AuthError("La contraseña actual es incorrecta");
+    }
+
+    const email = input.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new AuthError("Escribe un correo válido");
+    }
+    if (input.newPassword.length < 12) {
+      throw new AuthError("La nueva contraseña debe tener al menos 12 caracteres");
+    }
+
+    const existingUser = await this.userRepository.findByEmail(email);
+    if (existingUser && existingUser.id !== userId) {
+      throw new AuthError("Ese correo ya está asociado a otra cuenta");
+    }
+
+    const updated = await this.userRepository.updateCredentials(
+      userId,
+      email,
+      await bcrypt.hash(input.newPassword, passwordRounds),
+    );
+    return this.toSafeUser(updated);
+  }
 }
 
 export const authService = new AuthService();

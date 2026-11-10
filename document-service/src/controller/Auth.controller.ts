@@ -78,4 +78,32 @@ export class AuthController {
       }
     }
   }
+
+  async updateOwnCredentials(req: Request, res: Response): Promise<void> {
+    try {
+      const { currentPassword, email, newPassword } = req.body as {
+        currentPassword?: string;
+        email?: string;
+        newPassword?: string;
+      };
+      if (!req.authUser || !currentPassword || !email || !newPassword) {
+        res.status(400).json({ message: "Completa la contraseña actual, el correo y la nueva contraseña" });
+        return;
+      }
+
+      const user = await authService.updateOwnCredentials(req.authUser.id, {
+        currentPassword,
+        email,
+        newPassword,
+      });
+      res.status(200).json({ user });
+    } catch (error) {
+      if (error instanceof AuthError) {
+        res.status(400).json({ message: error.message });
+      } else {
+        console.error("Error al actualizar credenciales:", error);
+        res.status(500).json({ message: "No se pudieron actualizar las credenciales" });
+      }
+    }
+  }
 }

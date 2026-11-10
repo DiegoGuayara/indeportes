@@ -3,6 +3,7 @@ import {
   createUser,
   getUsers,
   setUserAccess,
+  updateOwnCredentials,
   type AuthUser,
   type ManagedUser,
   type UserRole,
@@ -11,9 +12,10 @@ import {
 type UserManagementProps = {
   currentUser: AuthUser;
   onBack: () => void;
+  onUserUpdated: (user: AuthUser) => void;
 };
 
-export function UserManagement({ currentUser, onBack }: UserManagementProps) {
+export function UserManagement({ currentUser, onBack, onUserUpdated }: UserManagementProps) {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,6 +25,9 @@ export function UserManagement({ currentUser, onBack }: UserManagementProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newAccountEmail, setNewAccountEmail] = useState(currentUser.email);
+  const [newPassword, setNewPassword] = useState("");
 
   const loadUsers = async () => {
     setLoading(true);
@@ -72,6 +77,29 @@ export function UserManagement({ currentUser, onBack }: UserManagementProps) {
     }
   };
 
+  const handleUpdateCredentials = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      const updatedUser = await updateOwnCredentials({
+        currentPassword,
+        email: newAccountEmail,
+        newPassword,
+      });
+      onUserUpdated(updatedUser);
+      setCurrentPassword("");
+      setNewPassword("");
+      setMessage("Se actualizaron el correo y la contraseña de esta cuenta administradora.");
+      await loadUsers();
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "No se pudieron actualizar las credenciales");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-100 px-3 py-6 text-slate-900 sm:px-4 sm:py-10">
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -109,6 +137,30 @@ export function UserManagement({ currentUser, onBack }: UserManagementProps) {
           <div className="flex justify-end sm:col-span-2">
             <button className="w-full rounded-md bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-300 sm:w-auto" disabled={saving} type="submit">
               {saving ? "Creando cuenta..." : "Crear usuario"}
+            </button>
+          </div>
+        </form>
+
+        <form className="grid gap-4 rounded-md border border-blue-200 bg-blue-50 p-4 sm:grid-cols-2" onSubmit={handleUpdateCredentials}>
+          <div className="sm:col-span-2">
+            <h2 className="font-semibold">Cambiar mi cuenta administradora</h2>
+            <p className="mt-1 text-sm text-slate-600">Actualiza el correo y la contraseña de la cuenta con la que iniciaste sesión. Debes confirmar la contraseña actual.</p>
+          </div>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            Correo institucional nuevo
+            <input className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" type="email" autoComplete="username" required value={newAccountEmail} onChange={(event) => setNewAccountEmail(event.target.value)} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium">
+            Contraseña actual
+            <input className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium sm:col-span-2">
+            Nueva contraseña (mínimo 12 caracteres)
+            <input className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" type="password" minLength={12} autoComplete="new-password" required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
+          </label>
+          <div className="flex justify-end sm:col-span-2">
+            <button className="rounded-md bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 disabled:bg-slate-300" disabled={saving} type="submit">
+              {saving ? "Actualizando..." : "Actualizar mi cuenta"}
             </button>
           </div>
         </form>

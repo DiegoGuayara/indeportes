@@ -72,3 +72,19 @@ export async function setUserAccess(id: number, active: boolean) {
   if (!response.ok) throw new Error(await readError(response, "No se pudo actualizar el acceso"));
   return (await response.json() as { user: AuthUser }).user;
 }
+
+export async function updateOwnCredentials(input: {
+  currentPassword: string;
+  email: string;
+  newPassword: string;
+}) {
+  const response = await apiFetch(`${API_URL}/auth/me/credentials`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response, "No se pudieron actualizar las credenciales"));
+  }
+  return (await response.json() as { user: AuthUser }).user;
+}

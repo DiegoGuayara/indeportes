@@ -84,6 +84,7 @@ export function App() {
         <UserManagement
           currentUser={user}
           onBack={() => setShowUserManagement(false)}
+          onUserUpdated={setUser}
         />
       ) : (
         <Uploader isAdmin={user.role === "ADMIN"} />

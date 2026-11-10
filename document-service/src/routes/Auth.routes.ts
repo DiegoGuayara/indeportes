@@ -16,6 +16,7 @@ const loginLimiter = rateLimit({
 router.post("/login", loginLimiter, controller.login.bind(controller));
 router.post("/logout", controller.logout.bind(controller));
 router.get("/me", authenticate, controller.me.bind(controller));
+router.patch("/me/credentials", authenticate, controller.updateOwnCredentials.bind(controller));
 router.get("/users", authenticate, requireAdmin, controller.listUsers.bind(controller));
 router.post("/users", authenticate, requireAdmin, controller.createUser.bind(controller));
 router.patch("/users/:id/access", authenticate, requireAdmin, controller.setUserAccess.bind(controller));

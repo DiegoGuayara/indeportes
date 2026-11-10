@@ -40,4 +40,11 @@ export class UserRepository {
   updateAccess(id: number, active: boolean) {
     return prisma.user.update({ where: { id }, data: { active } });
   }
+
+  updateCredentials(id: number, email: string, passwordHash: string) {
+    return prisma.user.update({
+      where: { id },
+      data: { email, passwordHash },
+    });
+  }
 }
