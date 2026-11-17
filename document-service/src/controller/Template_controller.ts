@@ -35,6 +35,42 @@ export class TemplateController {
     }
   }
 
+  async getCategories(_req: Request, res: Response): Promise<void> {
+    try {
+      res.status(200).json(await this.templateService.getAllCategories());
+    } catch (error) {
+      console.error("Error al obtener categorías:", error);
+      res.status(500).json({ message: "No se pudieron cargar las categorías" });
+    }
+  }
+
+  async createCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const name = typeof req.body.name === "string" ? req.body.name : "";
+      res.status(201).json(await this.templateService.createCategory(name));
+    } catch (error) {
+      const duplicate = typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
+      res.status(duplicate ? 409 : 400).json({
+        message: duplicate ? "Ya existe una categoría con ese nombre" : error instanceof Error ? error.message : "No se pudo crear la categoría",
+      });
+    }
+  }
+
+  async assignCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const templateId = Number(req.params.id);
+      const rawCategoryId = req.body.categoryId;
+      const categoryId = rawCategoryId === null || rawCategoryId === "" ? null : Number(rawCategoryId);
+      if (!Number.isInteger(templateId) || templateId <= 0 || (categoryId !== null && (!Number.isInteger(categoryId) || categoryId <= 0))) {
+        res.status(400).json({ message: "El formato o la categoría no son válidos" });
+        return;
+      }
+      res.status(200).json(await this.templateService.assignCategory(templateId, categoryId));
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "No se pudo asignar la categoría" });
+    }
+  }
+
   async getById(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
@@ -60,6 +96,12 @@ export class TemplateController {
   async create(req: Request, res: Response): Promise<void> {
     try {
       const { name, description } = req.body;
+      const categoryId = req.body.categoryId ? Number(req.body.categoryId) : null;
+
+      if (categoryId !== null && (!Number.isInteger(categoryId) || categoryId <= 0)) {
+        res.status(400).json({ message: "La categoría seleccionada no es válida" });
+        return;
+      }
 
       if (!req.file) {
         res.status(400).json({
@@ -72,6 +114,7 @@ export class TemplateController {
         name,
         description,
         file: req.file,
+        categoryId,
       });
 
       res.status(201).json(template);

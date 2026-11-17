@@ -125,8 +125,15 @@ exports.Prisma.TemplateScalarFieldEnum = {
   name: 'name',
   description: 'description',
   filePath: 'filePath',
+  categoryId: 'categoryId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.TemplateFieldScalarFieldEnum = {
@@ -172,6 +179,10 @@ exports.Prisma.TemplateOrderByRelevanceFieldEnum = {
   filePath: 'filePath'
 };
 
+exports.Prisma.CategoryOrderByRelevanceFieldEnum = {
+  name: 'name'
+};
+
 exports.Prisma.TemplateFieldOrderByRelevanceFieldEnum = {
   name: 'name',
   label: 'label',
@@ -194,6 +205,7 @@ exports.UserRole = exports.$Enums.UserRole = {
 
 exports.Prisma.ModelName = {
   Template: 'Template',
+  Category: 'Category',
   TemplateField: 'TemplateField',
   GeneratedDocument: 'GeneratedDocument',
   User: 'User'

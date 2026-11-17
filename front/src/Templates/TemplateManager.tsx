@@ -6,8 +6,12 @@ import {
   deleteTemplate,
   generateDocumentFromTemplate,
   previewDocumentFromTemplate,
+  assignTemplateCategory,
+  createTemplateCategory,
   getTemplateById,
+  getTemplateCategories,
   getTemplates,
+  type TemplateCategory,
   type Template,
   type TemplateField,
 } from "../services/templateApi";
@@ -56,6 +60,11 @@ const buildEmptyGroupRow = (fields: TemplateField[]) =>
 
 export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [categories, setCategories] = useState<TemplateCategory[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [uploadCategoryId, setUploadCategoryId] = useState("");
   const [templateSearch, setTemplateSearch] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
     null,
@@ -92,12 +101,43 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
     setError("");
 
     try {
-      const data = await getTemplates();
+      const [data, categoryData] = await Promise.all([
+        getTemplates(),
+        getTemplateCategories(),
+      ]);
       setTemplates(data);
+      setCategories(categoryData);
     } catch (error) {
       setError("No se pudieron cargar las plantillas");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateCategory = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const name = newCategoryName.trim();
+    if (!name) return;
+    setCreatingCategory(true);
+    setError("");
+    try {
+      const category = await createTemplateCategory(name);
+      setCategories((current) => [...current, category].sort((a, b) => a.name.localeCompare(b.name, "es")));
+      setNewCategoryName("");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "No se pudo crear la categoría");
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const handleAssignCategory = async (templateId: number, categoryId: string) => {
+    try {
+      const updated = await assignTemplateCategory(templateId, categoryId ? Number(categoryId) : null);
+      setTemplates((current) => current.map((template) => template.id === templateId ? { ...template, categoryId: updated.categoryId, category: updated.category } : template));
+      setError("");
+    } catch {
+      setError("No se pudo cambiar la categoría del formato");
     }
   };
 
@@ -130,7 +170,7 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
 
     const results = await Promise.allSettled(
       pendingTemplates.map(({ file, name }) =>
-        createTemplate({ name: name.trim(), description: form.description || undefined, file }),
+        createTemplate({ name: name.trim(), description: form.description || undefined, file, categoryId: uploadCategoryId ? Number(uploadCategoryId) : null }),
       ),
     );
     const failed = pendingTemplates.filter((_, index) => results[index]?.status === "rejected");
@@ -139,6 +179,7 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
     if (succeeded.length > 0) {
       setPendingTemplates(failed);
       setForm(initialForm);
+      setUploadCategoryId("");
       await loadTemplates();
     }
     if (failed.length > 0) {
@@ -302,13 +343,28 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
   const filteredTemplates = templates.filter((template) => {
-    const searchableText = `${template.name} ${template.description ?? ""}`
+    const searchableText = `${template.name} ${template.description ?? ""} ${template.category?.name ?? ""}`
       .toLocaleLowerCase("es")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
-    return searchableText.includes(normalizedSearch);
+    const matchesSearch = searchableText.includes(normalizedSearch);
+    const matchesCategory = categoryFilter === "all"
+      || (categoryFilter === "uncategorized" ? !template.categoryId : template.categoryId === Number(categoryFilter));
+    return matchesSearch && matchesCategory;
   });
+
+  const groupedTemplates = categories
+    .map((category) => ({
+      id: String(category.id),
+      name: category.name,
+      templates: filteredTemplates.filter((template) => template.categoryId === category.id),
+    }))
+    .filter((group) => group.templates.length > 0);
+  const uncategorizedTemplates = filteredTemplates.filter((template) => !template.categoryId);
+  if (uncategorizedTemplates.length > 0) {
+    groupedTemplates.push({ id: "uncategorized", name: "Sin categoría", templates: uncategorizedTemplates });
+  }
 
   return (
     <section className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -320,6 +376,18 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
             : "Selecciona un formato para llenar sus campos y generar el documento."}
         </p>
       </div>
+
+      {isAdmin && !selectedTemplate && (
+        <form className="flex flex-col gap-3 rounded-md border border-blue-100 bg-blue-50/50 p-3 sm:flex-row sm:items-end" onSubmit={handleCreateCategory}>
+          <label className="flex flex-1 flex-col gap-1 text-sm font-medium text-slate-700">
+            Crear categoría
+            <input className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" value={newCategoryName} onChange={(event) => setNewCategoryName(event.target.value)} maxLength={80} placeholder="Ej. Administrativos" />
+          </label>
+          <button className="rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50" type="submit" disabled={creatingCategory || !newCategoryName.trim()}>
+            {creatingCategory ? "Creando..." : "Crear categoría"}
+          </button>
+        </form>
+      )}
 
       {!selectedTemplate && isAdmin && <form
             className="grid min-w-0 gap-4 sm:grid-cols-2"
@@ -348,6 +416,13 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
 
         {pendingTemplates.length > 0 && (
           <div className="flex flex-col gap-3 sm:col-span-2">
+            <label className="flex max-w-md flex-col gap-1 text-sm font-medium text-slate-700">
+              Categoría para estos formatos
+              <select className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" value={uploadCategoryId} onChange={(event) => setUploadCategoryId(event.target.value)}>
+                <option value="">Sin categoría</option>
+                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+            </label>
             {pendingTemplates.map(({ file, name }, index) => (
               <div className="grid gap-2 rounded-md border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end" key={`${file.name}-${file.size}-${index}`}>
                 <p className="break-all text-sm text-slate-600">{file.name}</p>
@@ -422,12 +497,24 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
               />
             </div>
 
+            <label className="flex max-w-sm flex-col gap-1 text-sm font-medium text-slate-700">
+              Filtrar por categoría
+              <select className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+                <option value="all">Todas las categorías</option>
+                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                <option value="uncategorized">Sin categoría</option>
+              </select>
+            </label>
+
             {filteredTemplates.length === 0 ? (
               <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
                 No se encontraron formatos que coincidan con la búsqueda.
               </p>
             ) : (
-              filteredTemplates.map((template) => (
+              groupedTemplates.map((group) => (
+                <section className="flex flex-col gap-3" key={group.id}>
+                  <h3 className="border-b border-slate-200 pb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">{group.name} <span className="font-normal">({group.templates.length})</span></h3>
+                  {group.templates.map((template) => (
               <article
                 className="flex min-w-0 flex-col gap-3 rounded-md border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"
                 key={template.id}
@@ -449,6 +536,12 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
                 </div>
 
                 <div className="flex w-full gap-2 sm:w-auto">
+                  {isAdmin && (
+                    <select aria-label={`Categoría de ${template.name}`} className="min-w-32 rounded-md border border-slate-300 bg-white px-2 py-2 text-sm" value={template.categoryId ? String(template.categoryId) : ""} onChange={(event) => void handleAssignCategory(template.id, event.target.value)}>
+                      <option value="">Sin categoría</option>
+                      {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                    </select>
+                  )}
                   <button
                     className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:flex-none"
                     type="button"
@@ -467,6 +560,8 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
                   )}
                 </div>
               </article>
+                  ))}
+                </section>
               ))
             )}
           </div>

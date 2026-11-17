@@ -15,6 +15,27 @@ export class TemplateService {
     return await this.templateRepository.findAll();
   }
 
+  async getAllCategories() {
+    return await this.templateRepository.findAllCategories();
+  }
+
+  async createCategory(name: string) {
+    const normalizedName = name.trim();
+    if (!normalizedName) throw new Error("El nombre de la categoría es obligatorio");
+    if (normalizedName.length > 80) throw new Error("El nombre no puede superar 80 caracteres");
+    return await this.templateRepository.createCategory(normalizedName);
+  }
+
+  async assignCategory(templateId: number, categoryId: number | null) {
+    if (categoryId !== null) {
+      const categories = await this.templateRepository.findAllCategories();
+      if (!categories.some((category) => category.id === categoryId)) {
+        throw new Error("La categoría seleccionada no existe");
+      }
+    }
+    return await this.templateRepository.assignCategory(templateId, categoryId);
+  }
+
   async getById(id: number) {
     const template = await this.templateRepository.findById(id);
 
@@ -29,6 +50,7 @@ export class TemplateService {
     name: string;
     description?: string;
     file: Express.Multer.File;
+    categoryId?: number | null;
   }) {
     if (!data.name || data.name.trim() === "") {
       throw new Error("El nombre de la plantilla es obligatorio");
@@ -55,6 +77,7 @@ export class TemplateService {
       ...(data.description ? { description: data.description } : {}),
       filePath,
       fields,
+      ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
     });
   }
 

@@ -10,6 +10,9 @@ const upload = multer({
 const templateController = new TemplateController();
 
 router.get("/", templateController.getAll.bind(templateController));
+router.get("/categories", templateController.getCategories.bind(templateController));
+router.post("/categories", requireAdmin, templateController.createCategory.bind(templateController));
+router.patch("/:id/category", requireAdmin, templateController.assignCategory.bind(templateController));
 router.get("/:id", templateController.getById.bind(templateController));
 router.post(
   "/",

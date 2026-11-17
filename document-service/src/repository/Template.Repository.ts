@@ -7,6 +7,7 @@ export class TemplateRepository {
     return await prisma.template.findMany({
       include: {
         fields: true,
+        category: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -20,6 +21,7 @@ export class TemplateRepository {
       include: {
         fields: true,
         documents: true,
+        category: true,
       },
     });
   }
@@ -29,6 +31,7 @@ export class TemplateRepository {
     description?: string;
     filePath: string;
     fields: string[];
+    categoryId?: number | null;
   }) {
     const formatFieldLabel = (field: string) => {
       const fieldName = field.includes(".") ? field.split(".").pop() : field;
@@ -41,6 +44,7 @@ export class TemplateRepository {
         name: data.name,
         description: data.description ?? null,
         filePath: data.filePath,
+        categoryId: data.categoryId ?? null,
         fields: {
           create: data.fields.map((field) => ({
             name: field,
@@ -89,6 +93,25 @@ export class TemplateRepository {
   async delete(id: number) {
     return await prisma.template.delete({
       where: { id },
+    });
+  }
+
+  async findAllCategories() {
+    return await prisma.category.findMany({
+      orderBy: { name: "asc" },
+      include: { _count: { select: { templates: true } } },
+    });
+  }
+
+  async createCategory(name: string) {
+    return await prisma.category.create({ data: { name } });
+  }
+
+  async assignCategory(templateId: number, categoryId: number | null) {
+    return await prisma.template.update({
+      where: { id: templateId },
+      data: { categoryId },
+      include: { fields: true, category: true },
     });
   }
 }
