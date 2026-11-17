@@ -23,7 +23,7 @@ export class TemplateController {
 
   async getAll(req: Request, res: Response): Promise<void> {
     try {
-      const template = await this.templateService.getAll();
+      const template = await this.templateService.getPublicTemplates();
 
       res.status(200).json(template);
     } catch (error) {
@@ -32,6 +32,30 @@ export class TemplateController {
       res.status(500).json({
         message: "Error al obtener las plantillas",
       });
+    }
+  }
+
+  async downloadBlank(req: Request, res: Response): Promise<void> {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ message: "El ID del formato no es válido" });
+      return;
+    }
+
+    try {
+      const { buffer, name, extension } = await this.templateService.getBlankTemplate(id);
+      const safeName = name.replace(/[\\/:*?"<>|\r\n]/g, "_").trim() || "formato";
+      res.setHeader(
+        "Content-Type",
+        extension === "xlsx"
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(`${safeName}.${extension}`)}`);
+      res.setHeader("Cache-Control", "no-store");
+      res.send(buffer);
+    } catch (error) {
+      res.status(404).json({ message: error instanceof Error ? error.message : "No se encontró el formato" });
     }
   }
 

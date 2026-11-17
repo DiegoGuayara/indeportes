@@ -22,7 +22,8 @@ export type Template = {
   description: string | null;
   categoryId: number | null;
   category?: TemplateCategory | null;
-  filePath: string;
+  filePath?: string;
+  fileType?: "docx" | "xlsx";
   createdAt: string;
   updatedAt: string;
   fields?: TemplateField[];
@@ -79,6 +80,12 @@ export const getTemplates = async () => {
   }
 
   return response.json() as Promise<Template[]>;
+};
+
+export const downloadBlankTemplate = async (id: number) => {
+  const response = await apiFetch(`${API_URL}/templates/${id}/download`);
+  if (!response.ok) throw new Error("No se pudo descargar el formato");
+  return response.blob();
 };
 
 export const getTemplateById = async (id: number) => {

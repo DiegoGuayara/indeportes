@@ -7,7 +7,6 @@ import {
   updateOwnCredentials,
   type AuthUser,
   type ManagedUser,
-  type UserRole,
 } from "../services/authApi";
 
 type UserManagementProps = {
@@ -21,7 +20,6 @@ export function UserManagement({ currentUser, onBack, onUserUpdated }: UserManag
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("USER");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -52,12 +50,11 @@ export function UserManagement({ currentUser, onBack, onUserUpdated }: UserManag
     setError("");
     setMessage("");
     try {
-      await createUser({ name, email, password, role });
+      await createUser({ name, email, password, role: "ADMIN" });
       setName("");
       setEmail("");
       setPassword("");
-      setRole("USER");
-      setMessage("La cuenta quedó creada y ya puede iniciar sesión.");
+      setMessage("La cuenta administradora quedó creada y ya puede iniciar sesión.");
       await loadUsers();
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : "No se pudo crear el usuario");
@@ -132,7 +129,7 @@ export function UserManagement({ currentUser, onBack, onUserUpdated }: UserManag
         </div>
 
         <form className="grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2" onSubmit={handleCreate}>
-          <h2 className="font-semibold sm:col-span-2">Dar acceso a una persona</h2>
+          <h2 className="font-semibold sm:col-span-2">Registrar otro administrador</h2>
           <label className="flex flex-col gap-2 text-sm font-medium">
             Nombre
             <input className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" required value={name} onChange={(event) => setName(event.target.value)} />
@@ -145,16 +142,9 @@ export function UserManagement({ currentUser, onBack, onUserUpdated }: UserManag
             Contraseña inicial (mínimo 12 caracteres)
             <input className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" type="password" minLength={12} autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
-          <label className="flex flex-col gap-2 text-sm font-medium">
-            Rol
-            <select className="rounded-md border border-slate-300 bg-white px-3 py-2 font-normal" value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-              <option value="USER">Usuario: usa los formatos</option>
-              <option value="ADMIN">Administrador: gestiona accesos</option>
-            </select>
-          </label>
           <div className="flex justify-end sm:col-span-2">
             <button className="w-full rounded-md bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-300 sm:w-auto" disabled={saving} type="submit">
-              {saving ? "Creando cuenta..." : "Crear usuario"}
+              {saving ? "Creando cuenta..." : "Crear administrador"}
             </button>
           </div>
         </form>

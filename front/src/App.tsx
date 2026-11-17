@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Login } from "./Auth/Login";
 import { UserManagement } from "./Auth/UserManagement";
 import { Uploader } from "./Uploader/Uploader";
+import { GuestDownloads } from "./Templates/GuestDownloads";
 import { getCurrentUser, logout, type AuthUser } from "./services/authApi";
 
 export function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -47,7 +49,12 @@ export function App() {
   }
 
   if (!user) {
-    return <Login onAuthenticated={setUser} />;
+    if (guestMode) return <GuestDownloads onBack={() => setGuestMode(false)} />;
+    return <Login onAuthenticated={setUser} onGuest={() => setGuestMode(true)} />;
+  }
+
+  if (user.role !== "ADMIN") {
+    return <GuestDownloads onBack={() => void handleLogout()} />;
   }
 
   return (

@@ -48,7 +48,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/auth", authRoutes);
-app.use("/templates", authenticate, templateRoutes);
+app.use("/templates", templateRoutes);
 app.use("/documents", authenticate, documentRoutes);
 
 async function start() {

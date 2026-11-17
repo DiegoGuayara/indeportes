@@ -3,9 +3,10 @@ import { login, type AuthUser } from "../services/authApi";
 
 type LoginProps = {
   onAuthenticated: (user: AuthUser) => void;
+  onGuest: () => void;
 };
 
-export function Login({ onAuthenticated }: LoginProps) {
+export function Login({ onAuthenticated, onGuest }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -65,6 +66,11 @@ export function Login({ onAuthenticated }: LoginProps) {
             {loading ? "Ingresando..." : "Entrar"}
           </button>
         </form>
+        <div className="my-5 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-slate-200" />o<span className="h-px flex-1 bg-slate-200" /></div>
+        <button className="w-full rounded-md border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-50" type="button" onClick={onGuest}>
+          Ingresar como invitado
+        </button>
+        <p className="mt-2 text-center text-xs text-slate-500">Como invitado solo podrás descargar formatos en blanco.</p>
       </section>
     </main>
   );

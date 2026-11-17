@@ -301,7 +301,7 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
       const link = document.createElement("a");
 
       link.href = url;
-      const extension = selectedTemplate.filePath.toLowerCase().endsWith(".xlsx")
+      const extension = (selectedTemplate.fileType ?? (selectedTemplate.filePath?.toLowerCase().endsWith(".xlsx") ? "xlsx" : "docx")) === "xlsx"
         ? "xlsx"
         : "docx";
       link.download = `${selectedTemplate.name}-generado.${extension}`;
@@ -524,7 +524,7 @@ export function TemplateManager({ isAdmin }: { isAdmin: boolean }) {
                     {template.name}
                   </h3>
                   <p className="mt-1 text-sm text-slate-600">
-                    {template.filePath.toLowerCase().endsWith(".xlsx")
+                    {(template.fileType ?? (template.filePath?.toLowerCase().endsWith(".xlsx") ? "xlsx" : "docx")) === "xlsx"
                       ? "Formato Excel"
                       : "Formato Word"}
                   </p>

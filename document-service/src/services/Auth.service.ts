@@ -122,8 +122,8 @@ export class AuthService {
     if (input.password.length < 12) {
       throw new AuthError("La contraseña debe tener al menos 12 caracteres");
     }
-    if (input.role !== "ADMIN" && input.role !== "USER") {
-      throw new AuthError("El rol seleccionado no es válido");
+    if (input.role !== "ADMIN") {
+      throw new AuthError("Solo se pueden crear cuentas administradoras");
     }
     if (await this.userRepository.findByEmail(email)) {
       throw new AuthError("Ya existe una cuenta con ese correo");

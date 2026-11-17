@@ -15,6 +15,24 @@ export class TemplateService {
     return await this.templateRepository.findAll();
   }
 
+  async getPublicTemplates() {
+    const templates = await this.templateRepository.findAllPublic();
+    return templates.map(({ filePath, ...template }) => ({
+      ...template,
+      fileType: filePath.toLowerCase().endsWith(".xlsx") ? "xlsx" : "docx",
+    }));
+  }
+
+  async getBlankTemplate(id: number) {
+    const template = await this.templateRepository.findById(id);
+    if (!template) throw new Error("El formato no existe");
+    return {
+      buffer: await this.templateRepository.readTemplateFile(template.filePath),
+      name: template.name,
+      extension: template.filePath.toLowerCase().endsWith(".xlsx") ? "xlsx" : "docx",
+    };
+  }
+
   async getAllCategories() {
     return await this.templateRepository.findAllCategories();
   }

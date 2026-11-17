@@ -3,6 +3,20 @@ import path from "node:path";
 import { prisma } from "../lib/prisma.js";
 
 export class TemplateRepository {
+  async findAllPublic() {
+    return await prisma.template.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        filePath: true,
+        categoryId: true,
+        category: { select: { id: true, name: true } },
+      },
+      orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
+    });
+  }
+
   async findAll() {
     return await prisma.template.findMany({
       include: {
